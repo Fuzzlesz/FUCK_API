@@ -17,7 +17,7 @@
 // ==================================================
 
 #ifndef FUCK_API_ENABLE_SIMPLEINI
-	struct FUCK_SimpleIni_Opaque;
+struct FUCK_SimpleIni_Opaque;
 #	define FUCK_SIMPLEINI_TYPE FUCK_SimpleIni_Opaque
 #else
 #	define FUCK_SIMPLEINI_TYPE CSimpleIniA
@@ -610,6 +610,12 @@ struct FUCK_Interface
 	bool (*SliderAngle)(const char*, float*, float, float, const char*);
 	bool (*VSliderFloat)(const char*, const ImVec2&, float*, float, float, const char*);
 	bool (*VSliderButton)(const char*, const ImVec2&, float*, float, float, const char*, bool, bool, bool*, bool*);
+
+	// Version 5
+	void (*PushGamepadTweakFastDisabled)();
+	void (*PopGamepadTweakFastDisabled)();
+	void (*PushGamepadTweakSlowDisabled)();
+	void (*PopGamepadTweakSlowDisabled)();
 };
 #pragma pack(pop)
 
@@ -2364,6 +2370,39 @@ namespace FUCK
 	// Version 5
 	// --------------------------------------------------
 
+	/// @brief Disables the gamepad "tweak fast" modifier (holding RB) on sliders and drags.
+	/// While RB is held, ImGui normally multiplies every d-pad step by 10. Push this around
+	/// widgets where your plugin uses RB for something else (e.g. a hold-to-interact modifier)
+	/// so each d-pad press moves exactly one step.
+	inline void PushGamepadTweakFastDisabled()
+	{
+		if (auto i = GetInterface())
+			i->PushGamepadTweakFastDisabled();
+	}
+
+	/// @brief Pops a PushGamepadTweakFastDisabled(). The modifier is active again once every push has been popped.
+	inline void PopGamepadTweakFastDisabled()
+	{
+		if (auto i = GetInterface())
+			i->PopGamepadTweakFastDisabled();
+	}
+
+	/// @brief Disables the gamepad "tweak slow" modifier (holding LB) on sliders and drags.
+	/// While LB is held, ImGui normally makes d-pad steps finer (1/10 on drags and on sliders
+	/// with a decimal format). Push this around widgets where your plugin uses LB for something else.
+	inline void PushGamepadTweakSlowDisabled()
+	{
+		if (auto i = GetInterface())
+			i->PushGamepadTweakSlowDisabled();
+	}
+
+	/// @brief Pops a PushGamepadTweakSlowDisabled(). The modifier is active again once every push has been popped.
+	inline void PopGamepadTweakSlowDisabled()
+	{
+		if (auto i = GetInterface())
+			i->PopGamepadTweakSlowDisabled();
+	}
+
 	/// @brief Pushes a temporary scale multiplier for both Font Size and UI Padding/Spacing.
 	/// Note: Do not nest PushScale calls. Pop the previous scale before pushing a new one.
 	inline void PushScale(float scaleMultiplier, ImFont* font = nullptr)
@@ -2419,7 +2458,7 @@ namespace FUCK
 		}
 		return false;
 	}
-} 
+}
 
 // ==================================================
 // [ SECTION 5 ] GLOBAL LITERALS
