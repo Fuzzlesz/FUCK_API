@@ -1,7 +1,10 @@
 #pragma once
 #include <imgui.h>
 
-#define FUCK_API_VERSION 5
+#define FUCK_API_VERSION 6
+
+// Optional extras:
+//   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
 
 // ==================================================
 // [ OPTIONAL ] SIMPLEINI HELPERS
@@ -185,6 +188,34 @@ namespace FUCK
 		kAnyPopup      = kAnyPopupId | kAnyPopupLevel
 	};
 
+	enum class ColorEditFlags
+	{
+		kNone             = 0,
+		kNoAlpha          = 1 << 1,
+		kNoPicker         = 1 << 2,
+		kNoOptions        = 1 << 3,
+		kNoSmallPreview   = 1 << 4,
+		kNoInputs         = 1 << 5,
+		kNoTooltip        = 1 << 6,
+		kNoLabel          = 1 << 7,
+		kNoSidePreview    = 1 << 8,
+		kNoDragDrop       = 1 << 9,
+		kNoBorder         = 1 << 10,  // ColorButton: also hides the FUCK border
+		kAlphaOpaque      = 1 << 12,
+		kAlphaNoBg        = 1 << 13,
+		kAlphaPreviewHalf = 1 << 14,
+		kHDR              = 1 << 19,
+		kDisplayRGB       = 1 << 20,
+		kDisplayHSV       = 1 << 21,
+		kDisplayHex       = 1 << 22,
+		kUint8            = 1 << 23,
+		kFloat            = 1 << 24,
+		kPickerHueBar     = 1 << 25,
+		kPickerHueWheel   = 1 << 26,
+		kInputRGB         = 1 << 27,
+		kInputHSV         = 1 << 28
+	};
+
 	enum class HotkeyFlags : int
 	{
 		kNone            = 0,
@@ -217,6 +248,7 @@ namespace FUCK
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(ItemFlags)
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(PopupFlags)
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(HotkeyFlags)
+	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(ColorEditFlags)
 
 #undef FUCK_DEFINE_ENUM_BITWISE_OPERATORS
 
@@ -616,6 +648,12 @@ struct FUCK_Interface
 	void (*PopGamepadTweakFastDisabled)();
 	void (*PushGamepadTweakSlowDisabled)();
 	void (*PopGamepadTweakSlowDisabled)();
+
+	// Version 6
+	bool (*ColorButton)(const char*, const ImVec4&, int, const ImVec2&, bool);
+	bool (*ColorPicker3)(const char*, float[3], int);
+	bool (*ColorPicker4)(const char*, float[4], int, const float*);
+	bool (*IsItemActivated)();
 };
 #pragma pack(pop)
 
@@ -2458,6 +2496,37 @@ namespace FUCK
 		}
 		return false;
 	}
+
+	// --------------------------------------------------
+	// Version 6
+	// --------------------------------------------------
+
+	// Typed flag overloads of the existing ColorEdit functions
+	inline bool ColorEdit3(const char* label, float col[3], ColorEditFlags flags) { return ColorEdit3(label, col, static_cast<int>(flags)); }
+	inline bool ColorEdit4(const char* label, float col[4], ColorEditFlags flags) { return ColorEdit4(label, col, static_cast<int>(flags)); }
+
+	/// @brief A clickable colour swatch. Zero size defaults to frame height.
+	/// @param selected Draws the active border, e.g. for the current palette entry.
+	inline bool ColorButton(const char* desc_id, const ImVec4& col, ColorEditFlags flags = ColorEditFlags::kNone, const ImVec2& size = ImVec2(0, 0), bool selected = false)
+	{
+		return GetInterface() ? GetInterface()->ColorButton(desc_id, col, static_cast<int>(flags), size, selected) : false;
+	}
+
+	/// @brief An inline colour picker (no popup).
+	inline bool ColorPicker3(const char* label, float col[3], ColorEditFlags flags = ColorEditFlags::kNone)
+	{
+		return GetInterface() ? GetInterface()->ColorPicker3(label, col, static_cast<int>(flags)) : false;
+	}
+
+	/// @brief An inline colour picker (no popup).
+	/// @note Alpha bar is always shown, unless kNoAlpha is passed.
+	inline bool ColorPicker4(const char* label, float col[4], ColorEditFlags flags = ColorEditFlags::kNone, const float* ref_col = nullptr)
+	{
+		return GetInterface() ? GetInterface()->ColorPicker4(label, col, static_cast<int>(flags), ref_col) : false;
+	}
+
+	/// @brief Returns true on the frame the last item became active. Pair with IsItemDeactivatedAfterEdit() to capture values before an edit (e.g. for undo).
+	inline bool IsItemActivated() { return GetInterface() ? GetInterface()->IsItemActivated() : false; }
 }
 
 // ==================================================
