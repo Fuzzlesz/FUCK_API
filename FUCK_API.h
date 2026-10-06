@@ -2431,6 +2431,8 @@ namespace FUCK
 	// Version 3
 	// --------------------------------------------------
 
+	/// @brief Enables or disables the hotkey that toggles the FUCK menu. Plugins' own hotkeys are unaffected.
+	/// @note Shared by all plugins, so re-enable it when you're done.
 	inline void SetHotkeyEnabled(bool enabled)
 	{
 		if (auto i = GetInterface())
@@ -2753,6 +2755,9 @@ namespace FUCK
 	/// @brief Clockwise degrees of the current kRotatable window, set by its rotation handle. 0 otherwise.
 	/// @note Only drawn content can turn, e.g. with DrawImageRotated. FUCK doesn't clip it to the window.
 	inline float GetWindowRotation() { return GetInterface() ? GetInterface()->GetWindowRotation() : 0.0f; }
+
+	/// @brief Whether the hotkey that toggles the FUCK menu is enabled. See SetHotkeyEnabled.
+	inline bool IsHotkeyEnabled() { return GetInterface() ? GetInterface()->IsHotkeyEnabled() : true; }
 }
 
 // ==================================================
