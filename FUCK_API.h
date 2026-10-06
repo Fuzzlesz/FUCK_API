@@ -107,7 +107,11 @@ namespace FUCK
 		kIgnoreUserScale     = 1 << 14,  // Ignores global UI scaling slider
 		kCustomPosition      = 1 << 15,  // Opts out of Host-managed pos saving/loading
 		kRenderDuringTM      = 1 << 16,  // Renders when 'tm' (Toggle Menus) is set
-		kCloseOnClickOutside = 1 << 17   // Closes the window when the user clicks anywhere outside of its bounds
+		kCloseOnClickOutside = 1 << 17,  // Closes the window when the user clicks anywhere outside of its bounds
+		kEditable            = 1 << 18,  // Host-managed moving and saving while the FUCK menu is open
+		kScalable            = 1 << 19,  // With kEditable: corner handles scale the window. Read it with GetWindowScale()
+		kAnchorRight         = 1 << 20,  // With kEditable: keeps the right edge fixed. GetDefaultPos() is then the top-right corner
+		kRotatable           = 1 << 21   // With kEditable: a handle rotates the window's drawn content. Read it with GetWindowRotation()
 	};
 
 	enum class TableFlags
@@ -654,6 +658,9 @@ struct FUCK_Interface
 	bool (*ColorPicker3)(const char*, float[3], int);
 	bool (*ColorPicker4)(const char*, float[4], int, const float*);
 	bool (*IsItemActivated)();
+	float (*GetWindowScale)();
+	bool (*IsHotkeyEnabled)();
+	float (*GetWindowRotation)();
 };
 #pragma pack(pop)
 
@@ -1969,27 +1976,55 @@ namespace FUCK
 		PushFont(font, baseSize * GetGlobalScale() * scale);
 	}
 
-	/// @brief Visual for UI widget editing. Handles Screen-Space and Window-Space.
-	inline void DrawEditorBounds(const ImVec2& min, const ImVec2& max, EditorBoundsState state = EditorBoundsState::kNormal, float thickness = 2.0f, bool screenSpace = false, const ImVec2* customAnchor = nullptr)
+	/// @brief Colour for an editor state, shared by the bounds and resize handles.
+	inline ImU32 GetEditorBoundsColor(EditorBoundsState state)
 	{
-		ImU32 boundsColor;
 		switch (state) {
 		case EditorBoundsState::kLocked:
-			boundsColor = IM_COL32(150, 150, 150, 150);  // Grey
-			break;
+			return IM_COL32(150, 150, 150, 150);  // Grey
 		case EditorBoundsState::kSelected:
-			boundsColor = IM_COL32(51, 204, 51, 255);  // Green
-			break;
+			return IM_COL32(51, 204, 51, 255);  // Green
 		case EditorBoundsState::kHovered:
-			boundsColor = IM_COL32(0, 255, 0, 255);  // Bright Green
-			break;
+			return IM_COL32(0, 255, 0, 255);  // Bright Green
 		case EditorBoundsState::kNormal:
 		default:
-			boundsColor = IM_COL32(204, 51, 255, 255);  // Purple
-			break;
+			return IM_COL32(204, 51, 255, 255);  // Purple
 		}
+	}
 
-		if (screenSpace) {
+	/// @brief Rotates a point about a centre, clockwise in screen space.
+	inline ImVec2 RotatePoint(const ImVec2& a_point, const ImVec2& a_center, float a_degrees)
+	{
+		float rad = a_degrees * (3.14159265f / 180.0f);
+		float c   = std::cos(rad);
+		float s   = std::sin(rad);
+		float dx  = a_point.x - a_center.x;
+		float dy  = a_point.y - a_center.y;
+		return { a_center.x + dx * c - dy * s, a_center.y + dx * s + dy * c };
+	}
+
+	/// @brief Visual for UI widget editing. Handles Screen-Space and Window-Space.
+	/// @note With rotation, the outline turns about its centre clockwise, in degrees.
+	inline void DrawEditorBounds(const ImVec2& min, const ImVec2& max, EditorBoundsState state = EditorBoundsState::kNormal, float thickness = 2.0f, bool screenSpace = false, const ImVec2* customAnchor = nullptr, float rotation = 0.0f)
+	{
+		ImU32 boundsColor = GetEditorBoundsColor(state);
+
+		if (rotation != 0.0f) {
+			ImVec2 center    = { (min.x + max.x) * 0.5f, (min.y + max.y) * 0.5f };
+			ImVec2 corners[] = {
+				RotatePoint(min, center, rotation),
+				RotatePoint({ max.x, min.y }, center, rotation),
+				RotatePoint(max, center, rotation),
+				RotatePoint({ min.x, max.y }, center, rotation)
+			};
+			ImVec4 colV4 = ImGui::ColorConvertU32ToFloat4(boundsColor);
+			for (int i = 0; i < 4; ++i) {
+				if (screenSpace)
+					DrawScreenLine(corners[i], corners[(i + 1) % 4], boundsColor, thickness);
+				else
+					DrawLine(corners[i], corners[(i + 1) % 4], colV4, thickness);
+			}
+		} else if (screenSpace) {
 			DrawScreenRect(min, max, boundsColor, 0.0f, thickness);
 		} else {
 			ImVec4 colV4 = ImGui::ColorConvertU32ToFloat4(boundsColor);
@@ -2008,6 +2043,190 @@ namespace FUCK
 			DrawLine({ anchor.x - crossSize, anchor.y }, { anchor.x + crossSize, anchor.y }, anchorV4, 2.0f);
 			DrawLine({ anchor.x, anchor.y - crossSize }, { anchor.x, anchor.y + crossSize }, anchorV4, 2.0f);
 		}
+	}
+
+	/// @brief Drag state for EditorResizeHandles. Keep one per widget, between frames.
+	struct EditorResizeState
+	{
+		int    corner  = -1;         // 0-3 clockwise from top-left, -1 = idle
+		bool   hovered = false;      // skip starting a move while true
+		ImVec2 scale{ 1.0f, 1.0f };  // size against the rect at drag start, equal when aspect is locked
+		ImVec2 pivot;                // fixed opposite corner, in screen space
+		ImVec2 startMin;
+		ImVec2 startMax;
+		ImVec2 startMouse;
+
+		bool IsActive() const { return corner >= 0; }
+	};
+
+	/// @brief Result of an editor handle for this frame.
+	enum class EditorHandleResult
+	{
+		kNone,
+		kStarted,
+		kDragging,
+		kFinished
+	};
+
+	/// @brief Corner drag-to-resize handles for an editor outline (screen space). Outputs the resized rect.
+	/// Note: a_windowHovered says whether the handles may take the mouse, e.g. IsWindowHovered() for handles drawn in a window.
+	/// With a_rotation, the box turns about its centre and the output rect is unrotated, so use scale and pivot instead.
+	inline EditorHandleResult EditorResizeHandles(const ImVec2& a_min, const ImVec2& a_max, EditorResizeState& a_state, ImVec2& a_outMin, ImVec2& a_outMax,
+		bool a_windowHovered, bool a_lockAspect = true, const ImVec2& a_minSize = { 50.0f, 50.0f }, const ImVec2& a_maxSize = { 100000.0f, 100000.0f }, float a_rotation = 0.0f)
+	{
+		auto cornerOf = [](const ImVec2& a_lo, const ImVec2& a_hi, int a_index) {
+			return ImVec2(a_index == 1 || a_index == 2 ? a_hi.x : a_lo.x, a_index >= 2 ? a_hi.y : a_lo.y);
+		};
+
+		const float  half   = Scale(6.0f);
+		const ImVec2 mouse  = GetMousePos();
+		const ImVec2 center = { (a_min.x + a_max.x) * 0.5f, (a_min.y + a_max.y) * 0.5f };
+
+		a_outMin = a_min;
+		a_outMax = a_max;
+
+		int hoveredCorner = -1;
+		if (!a_state.IsActive() && a_windowHovered) {
+			for (int i = 0; i < 4; ++i) {
+				ImVec2 c = RotatePoint(cornerOf(a_min, a_max, i), center, a_rotation);
+				if (std::abs(mouse.x - c.x) <= half && std::abs(mouse.y - c.y) <= half) {
+					hoveredCorner = i;
+					break;
+				}
+			}
+		}
+		a_state.hovered = hoveredCorner >= 0;
+
+		auto result = EditorHandleResult::kNone;
+
+		if (a_state.IsActive() && !IsMouseDown(0)) {
+			a_state.corner = -1;
+			result         = EditorHandleResult::kFinished;
+		} else if (hoveredCorner >= 0 && IsMouseClicked(0)) {
+			a_state.corner     = hoveredCorner;
+			a_state.pivot      = RotatePoint(cornerOf(a_min, a_max, (hoveredCorner + 2) % 4), center, a_rotation);
+			a_state.startMin   = a_min;
+			a_state.startMax   = a_max;
+			a_state.startMouse = mouse;
+			a_state.scale      = { 1.0f, 1.0f };
+			result             = EditorHandleResult::kStarted;
+		}
+
+		if (a_state.IsActive()) {
+			ImVec2 size(a_state.startMax.x - a_state.startMin.x, a_state.startMax.y - a_state.startMin.y);
+			ImVec2 grabbed = cornerOf(a_state.startMin, a_state.startMax, a_state.corner);
+			ImVec2 pivot   = cornerOf(a_state.startMin, a_state.startMax, (a_state.corner + 2) % 4);
+
+			// Turn the drag back into the box's own unrotated axes
+			ImVec2 drag = RotatePoint({ mouse.x - a_state.startMouse.x, mouse.y - a_state.startMouse.y }, { 0.0f, 0.0f }, -a_rotation);
+
+			// Moving away from the pivot grows the rect
+			float dirX = grabbed.x > pivot.x ? 1.0f : -1.0f;
+			float dirY = grabbed.y > pivot.y ? 1.0f : -1.0f;
+			float dx   = drag.x * dirX;
+			float dy   = drag.y * dirY;
+
+			float newW, newH;
+			if (a_lockAspect && size.x > 0.0f && size.y > 0.0f) {
+				// Project onto the diagonal so both axes scale together
+				float diag     = std::sqrt(size.x * size.x + size.y * size.y);
+				float scale    = (diag + (dx * size.x + dy * size.y) / diag) / diag;
+				float minScale = std::max(a_minSize.x / size.x, a_minSize.y / size.y);
+				float maxScale = std::max(std::min(a_maxSize.x / size.x, a_maxSize.y / size.y), minScale);
+				scale          = std::clamp(scale, minScale, maxScale);
+				newW           = size.x * scale;
+				newH           = size.y * scale;
+			} else {
+				newW = std::clamp(size.x + dx, a_minSize.x, a_maxSize.x);
+				newH = std::clamp(size.y + dy, a_minSize.y, a_maxSize.y);
+			}
+			a_state.scale = { size.x > 0.0f ? newW / size.x : 1.0f, size.y > 0.0f ? newH / size.y : 1.0f };
+
+			a_outMin.x = dirX > 0.0f ? pivot.x : pivot.x - newW;
+			a_outMin.y = dirY > 0.0f ? pivot.y : pivot.y - newH;
+			a_outMax.x = a_outMin.x + newW;
+			a_outMax.y = a_outMin.y + newH;
+
+			if (result == EditorHandleResult::kNone)
+				result = EditorHandleResult::kDragging;
+		}
+
+		for (int i = 0; i < 4; ++i) {
+			ImVec2 c     = RotatePoint(cornerOf(a_min, a_max, i), center, a_rotation);
+			auto   state = a_state.corner == i ? EditorBoundsState::kSelected :
+			               hoveredCorner == i  ? EditorBoundsState::kHovered :
+			                                     EditorBoundsState::kNormal;
+			ImU32  col   = GetEditorBoundsColor(state);
+			DrawScreenRectFilled({ c.x - half, c.y - half }, { c.x + half, c.y + half }, col);
+		}
+
+		return result;
+	}
+
+	/// @brief Drag state for EditorRotateHandle. Keep one per widget, between frames.
+	struct EditorRotateState
+	{
+		bool  active     = false;
+		bool  hovered    = false;  // skip starting a move while true
+		float angle      = 0.0f;   // degrees turned clockwise since the drag started
+		float startAngle = 0.0f;
+	};
+
+	/// @brief Rotation handle above an editor outline (screen space), turning about a_pivot. Hold Shift to snap.
+	/// Note: a_windowHovered says whether the handle may take the mouse, e.g. IsWindowHovered() for a handle drawn in a window.
+	/// With a_rotation, the handle turns with the box. Call last in the window, as the cursor is left after the handle.
+	inline EditorHandleResult EditorRotateHandle(const ImVec2& a_min, const ImVec2& a_max, const ImVec2& a_pivot, EditorRotateState& a_state, bool a_windowHovered,
+		float a_snapDegrees = 15.0f, float a_rotation = 0.0f)
+	{
+		constexpr float RAD2DEG = 180.0f / 3.14159265f;
+
+		const float  radius = Scale(6.0f);
+		const ImVec2 center = { (a_min.x + a_max.x) * 0.5f, (a_min.y + a_max.y) * 0.5f };
+		const ImVec2 stem   = RotatePoint({ center.x, a_min.y }, center, a_rotation);
+		const ImVec2 handle = RotatePoint({ center.x, a_min.y - Scale(24.0f) }, center, a_rotation);
+		const ImVec2 mouse  = GetMousePos();
+
+		// An invisible button on the handle, so pressing it doesn't also drag the window it's drawn in.
+		// The cursor isn't moved back afterwards, as ImGui errors when a moved cursor has no item after it
+		SetCursorScreenPos({ handle.x - radius, handle.y - radius });
+		InvisibleButton("##FUCK_EditorRotate", { radius * 2.0f, radius * 2.0f });
+
+		float dx        = mouse.x - handle.x;
+		float dy        = mouse.y - handle.y;
+		a_state.hovered = !a_state.active && a_windowHovered && (dx * dx + dy * dy) <= radius * radius;
+
+		// Screen Y points down, so atan2 already increases clockwise
+		float mouseAngle = std::atan2(mouse.y - a_pivot.y, mouse.x - a_pivot.x) * RAD2DEG;
+
+		auto result = EditorHandleResult::kNone;
+		if (a_state.active && !IsMouseDown(0)) {
+			a_state.active = false;
+			result         = EditorHandleResult::kFinished;
+		} else if (a_state.hovered && IsMouseClicked(0)) {
+			a_state.active     = true;
+			a_state.startAngle = mouseAngle;
+			a_state.angle      = 0.0f;
+			result             = EditorHandleResult::kStarted;
+		}
+
+		if (a_state.active) {
+			float angle = std::remainder(mouseAngle - a_state.startAngle, 360.0f);
+			if (IsKeyDown(ImGuiMod_Shift) && a_snapDegrees > 0.0f)
+				angle = std::round(angle / a_snapDegrees) * a_snapDegrees;
+			a_state.angle = angle;
+
+			if (result == EditorHandleResult::kNone)
+				result = EditorHandleResult::kDragging;
+		}
+
+		auto  state = a_state.active  ? EditorBoundsState::kSelected :
+		              a_state.hovered ? EditorBoundsState::kHovered :
+		                                EditorBoundsState::kNormal;
+		ImU32 col   = GetEditorBoundsColor(state);
+		DrawScreenLine(stem, handle, col, 2.0f);
+		DrawScreenRectFilled({ handle.x - radius, handle.y - radius }, { handle.x + radius, handle.y + radius }, col, radius);
+
+		return result;
 	}
 
 	/// @brief Clamps a window or widget position to the screen bounds if it strays too far off-screen.
@@ -2527,6 +2746,13 @@ namespace FUCK
 
 	/// @brief Returns true on the frame the last item became active. Pair with IsItemDeactivatedAfterEdit() to capture values before an edit (e.g. for undo).
 	inline bool IsItemActivated() { return GetInterface() ? GetInterface()->IsItemActivated() : false; }
+
+	/// @brief Scale of the current kScalable window, set by its corner handles. 1 otherwise.
+	inline float GetWindowScale() { return GetInterface() ? GetInterface()->GetWindowScale() : 1.0f; }
+
+	/// @brief Clockwise degrees of the current kRotatable window, set by its rotation handle. 0 otherwise.
+	/// @note Only drawn content can turn, e.g. with DrawImageRotated. FUCK doesn't clip it to the window.
+	inline float GetWindowRotation() { return GetInterface() ? GetInterface()->GetWindowRotation() : 0.0f; }
 }
 
 // ==================================================
