@@ -1598,6 +1598,14 @@ namespace FUCK
 			i->GetPluginConfigPath(pluginName, dest, size);
 	}
 
+	/// @brief Absolute path to a plugin's config folder, defaulting to this plugin. Needs no INI support.
+	inline std::string GetConfigDirectory(const char* pluginName = g_pluginName)
+	{
+		char buf[512] = { 0 };
+		GetPluginConfigPath(pluginName, buf, sizeof(buf));
+		return std::string(buf);
+	}
+
 	inline void AddMenuListener(void* userdata, void (*callback)(const char* menuName, bool opening, void* userdata))
 	{
 		if (auto i = GetInterface())
@@ -1776,13 +1784,7 @@ namespace FUCK
 		}
 
 		/// @brief Returns the absolute path string pointing to this plugin's dedicated config folder.
-		std::string GetConfigDirectory() const
-		{
-			char buf[512] = { 0 };
-			if (auto* i = GetInterface())
-				i->GetPluginConfigPath(_pluginName, buf, sizeof(buf));
-			return std::string(buf);
-		}
+		std::string GetConfigDirectory() const { return FUCK::GetConfigDirectory(_pluginName); }
 
 	private:
 		const char* _pluginName;
