@@ -645,7 +645,7 @@ struct FUCK_Interface
 
 	bool (*SliderAngle)(const char*, float*, float, float, const char*);
 	bool (*VSliderFloat)(const char*, const ImVec2&, float*, float, float, const char*);
-	bool (*VSliderButton)(const char*, const ImVec2&, float*, float, float, const char*, bool, bool, bool*, bool*);
+	bool (*VSliderButton)(const char*, const ImVec2&, float*, float, float, const char*, const char*, const char*, bool*, bool*);
 
 	// Version 5
 	void (*PushGamepadTweakFastDisabled)();
@@ -2639,13 +2639,17 @@ namespace FUCK
 	{
 		return GetInterface() ? GetInterface()->SliderAngle(label, v_rad, v_degrees_min, v_degrees_max, format) : false;
 	}
+	/// @brief Vertical slider, sized to just the slider.
 	inline bool VSliderFloat(const char* label, const ImVec2& size, float* v, float v_min, float v_max, const char* format = "%.3f")
 	{
 		return GetInterface() ? GetInterface()->VSliderFloat(label, size, v, v_min, v_max, format) : false;
 	}
-	inline bool VSliderButton(const char* label, const ImVec2& slider_size, float* v, float v_min, float v_max, const char* format = "%.3f", bool draw_top_button = false, bool draw_bottom_button = true, bool* out_top_pressed = nullptr, bool* out_bottom_pressed = nullptr)
+	/// @brief Vertical slider with optional buttons above and below. A button is drawn when its label is set.
+	/// @note A button without a label keeps its space, so a row of these with the same slider size lines up,
+	/// including one with no buttons. For a lone slider without that space, use VSliderFloat.
+	inline bool VSliderButton(const char* str_id, const ImVec2& slider_size, float* v, float v_min, float v_max, const char* format = "%.3f", const char* top_label = nullptr, const char* bottom_label = nullptr, bool* out_top_pressed = nullptr, bool* out_bottom_pressed = nullptr)
 	{
-		return GetInterface() ? GetInterface()->VSliderButton(label, slider_size, v, v_min, v_max, format, draw_top_button, draw_bottom_button, out_top_pressed, out_bottom_pressed) : false;
+		return GetInterface() ? GetInterface()->VSliderButton(str_id, slider_size, v, v_min, v_max, format, top_label, bottom_label, out_top_pressed, out_bottom_pressed) : false;
 	}
 
 	// --------------------------------------------------
@@ -2730,11 +2734,11 @@ namespace FUCK
 		return false;
 	}
 
-	/// @brief A vertical slider with optional +/- buttons that displays values scaled by a multiplier.
-	inline bool ScaledVSliderButton(const char* label, const ImVec2& slider_size, float* v, float v_min, float v_max, float visualScaleMultiplier, const char* format = "%.0f", bool draw_top_button = false, bool draw_bottom_button = true, bool* out_top_pressed = nullptr, bool* out_bottom_pressed = nullptr)
+	/// @brief VSliderButton that displays values scaled by a multiplier.
+	inline bool ScaledVSliderButton(const char* str_id, const ImVec2& slider_size, float* v, float v_min, float v_max, float visualScaleMultiplier, const char* format = "%.0f", const char* top_label = nullptr, const char* bottom_label = nullptr, bool* out_top_pressed = nullptr, bool* out_bottom_pressed = nullptr)
 	{
 		float display = *v * visualScaleMultiplier;
-		if (VSliderButton(label, slider_size, &display, v_min * visualScaleMultiplier, v_max * visualScaleMultiplier, format, draw_top_button, draw_bottom_button, out_top_pressed, out_bottom_pressed)) {
+		if (VSliderButton(str_id, slider_size, &display, v_min * visualScaleMultiplier, v_max * visualScaleMultiplier, format, top_label, bottom_label, out_top_pressed, out_bottom_pressed)) {
 			*v = display / visualScaleMultiplier;
 			return true;
 		}
