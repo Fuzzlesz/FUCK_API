@@ -2785,6 +2785,20 @@ namespace FUCK
 
 	/// @brief Whether the hotkey that toggles the FUCK menu is enabled. See SetHotkeyEnabled.
 	inline bool IsHotkeyEnabled() { return GetInterface() ? GetInterface()->IsHotkeyEnabled() : true; }
+
+	/// @brief TextDisabled that wraps at the edge of the available space.
+	inline void TextDisabledWrapped(const char* fmt, ...)
+	{
+		auto i = GetInterface();
+		if (!i)
+			return;
+		va_list args;
+		va_start(args, fmt);
+		char buf[1024];
+		vsnprintf(buf, 1024, fmt, args);
+		va_end(args);
+		i->TextColoredWrapped(GetStyleColorVec4(ImGuiCol_TextDisabled), buf);
+	}
 }
 
 // ==================================================
