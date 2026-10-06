@@ -1676,6 +1676,27 @@ namespace FUCK
 		float _height = 0.0f;
 	};
 
+	/// @brief Draws an image rotated about its centre, in screen space.
+	/// @param angleDegrees Rotation angle in degrees (clockwise).
+	inline void DrawImageRotated(ImTextureID textureId, const ImVec2& pos, const ImVec2& size, float angleDegrees, const ImVec4& tint_col = ImVec4(1, 1, 1, 1))
+	{
+		ImVec2 center = { pos.x + size.x * 0.5f, pos.y + size.y * 0.5f };
+		float  rad    = angleDegrees * (3.14159265f / 180.0f);
+		float  cosA   = std::cos(rad);
+		float  sinA   = std::sin(rad);
+
+		float halfW = size.x * 0.5f;
+		float halfH = size.y * 0.5f;
+
+		// Rotate each corner's offset from the centre
+		ImVec2 p1 = { center.x - halfW * cosA + halfH * sinA, center.y - halfW * sinA - halfH * cosA };  // Top Left
+		ImVec2 p2 = { center.x + halfW * cosA + halfH * sinA, center.y + halfW * sinA - halfH * cosA };  // Top Right
+		ImVec2 p3 = { center.x + halfW * cosA - halfH * sinA, center.y + halfW * sinA + halfH * cosA };  // Bottom Right
+		ImVec2 p4 = { center.x - halfW * cosA - halfH * sinA, center.y - halfW * sinA + halfH * cosA };  // Bottom Left
+
+		DrawImageQuad(textureId, p1, p2, p3, p4, { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 }, tint_col);
+	}
+
 	/// @brief String copy utility.
 	template <size_t N>
 	inline void StringCopy(char (&dest)[N], const char* source)
