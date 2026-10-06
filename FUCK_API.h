@@ -2689,7 +2689,7 @@ namespace FUCK
 			i->PopGamepadTweakSlowDisabled();
 	}
 
-	/// @brief Pushes a temporary scale multiplier for both Font Size and UI Padding/Spacing.
+	/// @brief Pushes a temporary scale multiplier for Font Size, UI Padding/Spacing, and frame rounding.
 	/// Note: Do not nest PushScale calls. Pop the previous scale before pushing a new one.
 	inline void PushScale(float scaleMultiplier, ImFont* font = nullptr)
 	{
@@ -2702,12 +2702,14 @@ namespace FUCK
 		PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(pad.x * scaleMultiplier, pad.y * scaleMultiplier));
 		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(space.x * scaleMultiplier, space.y * scaleMultiplier));
 		PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(innerSpace.x * scaleMultiplier, innerSpace.y * scaleMultiplier));
+		PushStyleVar(ImGuiStyleVar_FrameRounding, GetStyleVar(ImGuiStyleVar_FrameRounding) * scaleMultiplier);
+		PushStyleVar(ImGuiStyleVar_GrabRounding, GetStyleVar(ImGuiStyleVar_GrabRounding) * scaleMultiplier);
 	}
 
 	/// @brief Pops the styling pushed by PushScale.
 	inline void PopScale()
 	{
-		PopStyleVar(3);
+		PopStyleVar(5);
 		PopFont();
 	}
 
