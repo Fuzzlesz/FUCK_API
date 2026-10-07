@@ -2097,6 +2097,8 @@ namespace FUCK
 	/// @brief Corner drag-to-resize handles for an editor outline (screen space). Outputs the resized rect.
 	/// Note: a_windowHovered says whether the handles may take the mouse, e.g. IsWindowHovered() for handles drawn in a window.
 	/// With a_rotation, the box turns about its centre and the output rect is unrotated, so use scale and pivot instead.
+	/// Each corner is a button, so grabbing one doesn't also drag the window. Call after your content, as the cursor is left after the handles.
+	/// @note For more than one in the same window, wrap each in PushID()/PopID() so their handles don't clash.
 	inline EditorHandleResult EditorResizeHandles(const ImVec2& a_min, const ImVec2& a_max, EditorResizeState& a_state, ImVec2& a_outMin, ImVec2& a_outMax,
 		bool a_windowHovered, bool a_lockAspect = true, const ImVec2& a_minSize = { 50.0f, 50.0f }, const ImVec2& a_maxSize = { 100000.0f, 100000.0f }, float a_rotation = 0.0f)
 	{
@@ -2110,6 +2112,15 @@ namespace FUCK
 
 		a_outMin = a_min;
 		a_outMax = a_max;
+
+		// An invisible button on each corner, so pressing one doesn't also drag the window it's drawn in.
+		// The cursor isn't moved back afterwards, as ImGui errors when a moved cursor has no item after it
+		static const char* const buttonIds[4] = { "##FUCK_EditorResize0", "##FUCK_EditorResize1", "##FUCK_EditorResize2", "##FUCK_EditorResize3" };
+		for (int i = 0; i < 4; ++i) {
+			ImVec2 c = RotatePoint(cornerOf(a_min, a_max, i), center, a_rotation);
+			SetCursorScreenPos({ c.x - half, c.y - half });
+			InvisibleButton(buttonIds[i], { half * 2.0f, half * 2.0f });
+		}
 
 		int hoveredCorner = -1;
 		if (!a_state.IsActive() && a_windowHovered) {
@@ -2201,6 +2212,7 @@ namespace FUCK
 	/// @brief Rotation handle above an editor outline (screen space), turning about a_pivot. Hold Shift to snap.
 	/// Note: a_windowHovered says whether the handle may take the mouse, e.g. IsWindowHovered() for a handle drawn in a window.
 	/// With a_rotation, the handle turns with the box. Call last in the window, as the cursor is left after the handle.
+	/// @note For more than one in the same window, wrap each in PushID()/PopID() so their handles don't clash..
 	inline EditorHandleResult EditorRotateHandle(const ImVec2& a_min, const ImVec2& a_max, const ImVec2& a_pivot, EditorRotateState& a_state, bool a_windowHovered,
 		float a_snapDegrees = 15.0f, float a_rotation = 0.0f)
 	{
