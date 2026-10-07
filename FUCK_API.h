@@ -661,6 +661,9 @@ struct FUCK_Interface
 	bool (*IsHotkeyEnabled)();
 	float (*GetWindowScale)();
 	float (*GetWindowRotation)();
+	void (*BeginStickyList)(const char*, float, float, bool);
+	void (*EndStickyList)();
+	bool (*StickyHeader)(const char*, bool*, int, int);
 };
 #pragma pack(pop)
 
@@ -2800,6 +2803,43 @@ namespace FUCK
 		vsnprintf(buf, 1024, fmt, args);
 		va_end(args);
 		i->TextColoredWrapped(GetStyleColorVec4(ImGuiCol_TextDisabled), buf);
+	}
+
+	/// @brief Joins an icon glyph and text into one label, for any widget that takes a label.
+	/// e.g. FUCK::Button(FUCK::IconText(ICON_FA_GEAR, "$MyPlugin_Settings"_T))
+	/// @note Use the result straight away. To keep it, copy it into a std::string.
+	inline const char* IconText(const char* icon, const char* text)
+	{
+		static thread_local char buffers[8][256];
+		static thread_local int  next = 0;
+
+		char* buf = buffers[next];
+		next      = (next + 1) % 8;
+		snprintf(buf, sizeof(buffers[0]), "%s %s", icon ? icon : "", text ? text : "");
+		return buf;
+	}
+
+	/// @brief Begins a scrolling list whose section headers stick to the top as you scroll.
+	/// @note Always pair with EndStickyList().
+	inline void BeginStickyList(const char* str_id, const ImVec2& size = ImVec2(0, 0), bool border = true)
+	{
+		if (auto i = GetInterface())
+			i->BeginStickyList(str_id, size.x, size.y, border);
+	}
+
+	/// @brief A section header in a sticky list. Draw the section's rows when it returns true.
+	/// @param open Optional. Your own bool for the open state, e.g. for an Expand All button.
+	/// @param count Optional. Shown on the right of the header.
+	inline bool StickyHeader(const char* label, bool* open = nullptr, int count = -1, int flags = 0)
+	{
+		return GetInterface() ? GetInterface()->StickyHeader(label, open, count, flags) : false;
+	}
+
+	/// @brief Ends a sticky list.
+	inline void EndStickyList()
+	{
+		if (auto i = GetInterface())
+			i->EndStickyList();
 	}
 }
 
