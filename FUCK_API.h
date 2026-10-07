@@ -658,8 +658,8 @@ struct FUCK_Interface
 	bool (*ColorPicker3)(const char*, float[3], int);
 	bool (*ColorPicker4)(const char*, float[4], int, const float*);
 	bool (*IsItemActivated)();
-	float (*GetWindowScale)();
 	bool (*IsHotkeyEnabled)();
+	float (*GetWindowScale)();
 	float (*GetWindowRotation)();
 };
 #pragma pack(pop)
@@ -2778,15 +2778,15 @@ namespace FUCK
 	/// @brief Returns true on the frame the last item became active. Pair with IsItemDeactivatedAfterEdit() to capture values before an edit (e.g. for undo).
 	inline bool IsItemActivated() { return GetInterface() ? GetInterface()->IsItemActivated() : false; }
 
+	/// @brief Whether the hotkey that toggles the FUCK menu is enabled. See SetHotkeyEnabled.
+	inline bool IsHotkeyEnabled() { return GetInterface() ? GetInterface()->IsHotkeyEnabled() : true; }
+
 	/// @brief Scale of the current kScalable window, set by its corner handles. 1 otherwise.
 	inline float GetWindowScale() { return GetInterface() ? GetInterface()->GetWindowScale() : 1.0f; }
 
 	/// @brief Clockwise degrees of the current kRotatable window, set by its rotation handle. 0 otherwise.
 	/// @note Only drawn content can turn, e.g. with DrawImageRotated. FUCK doesn't clip it to the window.
 	inline float GetWindowRotation() { return GetInterface() ? GetInterface()->GetWindowRotation() : 0.0f; }
-
-	/// @brief Whether the hotkey that toggles the FUCK menu is enabled. See SetHotkeyEnabled.
-	inline bool IsHotkeyEnabled() { return GetInterface() ? GetInterface()->IsHotkeyEnabled() : true; }
 
 	/// @brief TextDisabled that wraps at the edge of the available space.
 	inline void TextDisabledWrapped(const char* fmt, ...)
