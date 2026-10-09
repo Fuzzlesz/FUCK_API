@@ -288,13 +288,30 @@ namespace FUCK
 		/// @note Defaults to the name passed into FUCK::Connect().
 		virtual const char* PluginName() const { return FUCK::g_pluginName; }
 
+		/// @brief The tool's name in the sidebar.
+		/// @note With PluginName(), it's what the user's settings for the tool are saved under (its group, place, name,
+		/// favourite and hidden state), so keep it the same between sessions or they won't find it again.
 		virtual const char* Name() const = 0;
+
+		/// @brief The sidebar group this tool sits in, or nullptr for the top level.
+		/// @note "::" nests groups, up to 4 deep, e.g. "Camera::Presets". Tools naming the same group share it,
+		/// in registration order. The string must stay alive, so build it once if it's put together at runtime.
+		/// @note Read when the tool registers. Call FUCK::RefreshTools() if it changes. Where the user has moved it wins.
 		virtual const char* Group() const { return nullptr; }
 		virtual void        Draw() = 0;
+
+		/// @brief Called every frame the host draws, for every tool, not just the open one. Check your own state before drawing.
 		virtual void        RenderOverlay() {}
+
+		/// @brief Called when the tool is selected or deselected, and when the menu opens or closes while it's selected.
 		virtual void        OnOpen() {}
 		virtual void        OnClose() {}
+
+		/// @brief The event is a const RE::InputEvent* const*. Called as the game dispatches input, outside the frame, so
+		/// don't draw here. Every tool gets it, the open one first. Return true to consume it and stop later handlers.
 		virtual bool        OnAsyncInput(const void*) { return false; }
+
+		/// @brief Whether the tool is listed in the sidebar. Read like Group(), so call FUCK::RefreshTools() after it changes.
 		virtual bool        ShowInSidebar() const { return true; }
 	};
 
@@ -312,7 +329,7 @@ namespace FUCK
 		/// @note Defaults to the name passed into FUCK::Connect().
 		virtual const char* PluginName() const { return FUCK::g_pluginName; }
 
-		/// @brief Display title shown on the Window chrome. Translates natively if a localized string key is passed.
+		/// @brief Display title shown on the Window chrome. Not translated, so return "$Key"_T for a localised one.
 		virtual const char* Title() const = 0;
 
 		virtual void        Draw() = 0;
@@ -685,6 +702,7 @@ namespace FUCK
 
 	/// @brief Connects to the FUCK Host Framework.
 	/// @param pluginName The exact name of your SKSE plugin. Used automatically for translations and settings directories.
+	/// @note The pointer is kept, not copied, so pass a literal.
 	inline bool Connect(const char* pluginName)
 	{
 		if (!pluginName || pluginName[0] == '\0') {
@@ -716,11 +734,15 @@ namespace FUCK
 		return true;
 	}
 
+	/// @brief The host keeps the pointer for the session, so the tool must outlive it. Tools can't be unregistered.
+	/// @note A second tool with the same PluginName() and Name() is ignored.
 	inline void RegisterTool(ITool* tool)
 	{
 		if (auto i = GetInterface())
 			i->RegisterTool(tool);
 	}
+	/// @brief The host keeps the pointer until UnregisterWindow(), so the window must outlive it.
+	/// @note A second window with the same PluginName() and Id() is ignored.
 	inline void RegisterWindow(IWindow* window)
 	{
 		if (auto i = GetInterface())
@@ -1584,6 +1606,7 @@ namespace FUCK
 	// Strings & Utilities
 	// --------------------------------------------------
 
+	/// @brief Translates a "$Key". The result stays valid for the session, or is the key itself if it has no translation.
 	inline const char* Translate(const char* key) { return GetInterface() ? GetInterface()->GetTranslation(key) : key; }
 	inline void        LoadTranslation(const char* pluginName)
 	{
@@ -1625,6 +1648,7 @@ namespace FUCK
 	// ==================================================
 
 	/// @brief RAII wrapper for custom images.
+	/// @note The handle is the host's, not a texture ImGui can draw. Only pass it to FUCK's image functions.
 	class Image
 	{
 	public:
