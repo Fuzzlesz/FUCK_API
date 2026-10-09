@@ -681,6 +681,7 @@ struct FUCK_Interface
 	void (*BeginStickyList)(const char*, float, float, bool);
 	void (*EndStickyList)();
 	bool (*StickyHeader)(const char*, bool*, int, int);
+	void (*RefreshTools)();
 };
 #pragma pack(pop)
 
@@ -2876,6 +2877,15 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->EndStickyList();
+	}
+
+	/// @brief Tells the sidebar your tools have changed what they return from Name(), Group() or ShowInSidebar().
+	/// They're read again on the next frame. Call it once after a batch of changes, not per tool. Safe from any thread.
+	/// @note The objects and strings the old values pointed to must stay alive until then.
+	inline void RefreshTools()
+	{
+		if (auto i = GetInterface())
+			i->RefreshTools();
 	}
 }
 
