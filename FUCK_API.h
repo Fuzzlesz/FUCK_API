@@ -1648,6 +1648,33 @@ namespace FUCK
 	// [ SECTION 4 ] SMART WRAPPERS & UTILITIES
 	// ==================================================
 
+	/// @brief A tool that's just a name, a group and a draw function, for pages that need nothing more.
+	/// @note The name and group are copied, so they can be built at runtime. Create it after Connect() so "$Key"_T
+	/// names are translated. It can't be copied or moved, so it stays where the host's pointer expects it.
+	class SimpleTool : public ITool
+	{
+	public:
+		SimpleTool(std::string a_name, std::string a_group, std::function<void()> a_draw) :
+			_name(std::move(a_name)), _group(std::move(a_group)), _draw(std::move(a_draw))
+		{}
+
+		SimpleTool(const SimpleTool&)            = delete;
+		SimpleTool& operator=(const SimpleTool&) = delete;
+
+		const char* Name() const override { return _name.c_str(); }
+		const char* Group() const override { return _group.empty() ? nullptr : _group.c_str(); }
+		void        Draw() override
+		{
+			if (_draw)
+				_draw();
+		}
+
+	private:
+		std::string           _name;
+		std::string           _group;
+		std::function<void()> _draw;
+	};
+
 	/// @brief RAII wrapper for custom images.
 	/// @note The handle is the host's, not a texture ImGui can draw. Only pass it to FUCK's image functions.
 	class Image
