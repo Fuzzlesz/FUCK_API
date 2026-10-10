@@ -2756,21 +2756,48 @@ namespace FUCK
 			i->PopGamepadTweakSlowDisabled();
 	}
 
-	/// @brief Pushes a temporary scale multiplier for Font Size, UI Padding/Spacing, and frame rounding.
-	/// Note: Do not nest PushScale calls. Pop the previous scale before pushing a new one.
+	namespace detail
+	{
+		// The style before the outermost PushScale()
+		struct ScaleBase
+		{
+			ImVec2 framePadding;
+			ImVec2 itemSpacing;
+			ImVec2 itemInnerSpacing;
+			float  frameRounding;
+			float  grabRounding;
+		};
+
+		inline std::vector<ScaleBase>& ScaleStack()
+		{
+			static thread_local std::vector<ScaleBase> s_stack;
+			return s_stack;
+		}
+	}
+
+	/// @brief Scales the font, padding, spacing and rounding until PopScale(). Nested calls replace the scale, they don't compound.
+	/// @param font Defaults to the regular font.
 	inline void PushScale(float scaleMultiplier, ImFont* font = nullptr)
 	{
+		auto& stack = detail::ScaleStack();
+
+		const detail::ScaleBase base = stack.empty() ?
+		                                   detail::ScaleBase{
+											   GetStyleVarVec(ImGuiStyleVar_FramePadding),
+											   GetStyleVarVec(ImGuiStyleVar_ItemSpacing),
+											   GetStyleVarVec(ImGuiStyleVar_ItemInnerSpacing),
+											   GetStyleVar(ImGuiStyleVar_FrameRounding),
+											   GetStyleVar(ImGuiStyleVar_GrabRounding) } :
+		                                   stack.front();
+		stack.push_back(base);
+
 		PushFontScaled(font, scaleMultiplier);
 
-		ImVec2 pad        = GetStyleVarVec(ImGuiStyleVar_FramePadding);
-		ImVec2 space      = GetStyleVarVec(ImGuiStyleVar_ItemSpacing);
-		ImVec2 innerSpace = GetStyleVarVec(ImGuiStyleVar_ItemInnerSpacing);
-
-		PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(pad.x * scaleMultiplier, pad.y * scaleMultiplier));
-		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(space.x * scaleMultiplier, space.y * scaleMultiplier));
-		PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(innerSpace.x * scaleMultiplier, innerSpace.y * scaleMultiplier));
-		PushStyleVar(ImGuiStyleVar_FrameRounding, GetStyleVar(ImGuiStyleVar_FrameRounding) * scaleMultiplier);
-		PushStyleVar(ImGuiStyleVar_GrabRounding, GetStyleVar(ImGuiStyleVar_GrabRounding) * scaleMultiplier);
+		PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(base.framePadding.x * scaleMultiplier, base.framePadding.y * scaleMultiplier));
+		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(base.itemSpacing.x * scaleMultiplier, base.itemSpacing.y * scaleMultiplier));
+		PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(base.itemInnerSpacing.x * scaleMultiplier, base.itemInnerSpacing.y * scaleMultiplier));
+		PushStyleVar(ImGuiStyleVar_FrameRounding, base.frameRounding * scaleMultiplier);
+		PushStyleVar(ImGuiStyleVar_GrabRounding, base.grabRounding * scaleMultiplier);
 	}
 
 	/// @brief Pops the styling pushed by PushScale.
@@ -2778,6 +2805,10 @@ namespace FUCK
 	{
 		PopStyleVar(5);
 		PopFont();
+
+		auto& stack = detail::ScaleStack();
+		if (!stack.empty())
+			stack.pop_back();
 	}
 
 	/// @brief A slider that displays values scaled by a multiplier (e.g., displaying 1.5 as "150").
