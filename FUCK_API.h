@@ -111,7 +111,8 @@ namespace FUCK
 		kEditable            = 1 << 18,  // Host-managed moving and saving while the FUCK menu is open
 		kScalable            = 1 << 19,  // With kEditable: corner handles scale the window. Read it with GetWindowScale()
 		kAnchorRight         = 1 << 20,  // With kEditable: keeps the right edge fixed. GetDefaultPos() is then the top-right corner
-		kRotatable           = 1 << 21   // With kEditable: a handle rotates the window's drawn content. Read it with GetWindowRotation()
+		kRotatable           = 1 << 21,  // With kEditable: a handle rotates the window's drawn content. Read it with GetWindowRotation()
+		kHideWithHUD         = 1 << 22   // A HUD widget: hides while the game hides its own HUD (intro, cutscenes, dialogue), and HUD managers may fade it. See IsGameHUDHidden(), EnumerateHUDWidgets()
 	};
 
 	enum class TableFlags
@@ -330,6 +331,7 @@ namespace FUCK
 		virtual const char* PluginName() const { return FUCK::g_pluginName; }
 
 		/// @brief Display title shown on the Window chrome. Not translated, so return "$Key"_T for a localised one.
+		/// @note May be called from any thread. Return a stable string, not one rebuilt in Draw().
 		virtual const char* Title() const = 0;
 
 		virtual void        Draw() = 0;
@@ -682,6 +684,9 @@ struct FUCK_Interface
 	void (*EndStickyList)();
 	bool (*StickyHeader)(const char*, bool*, int, int);
 	void (*RefreshTools)();
+	bool (*IsGameHUDHidden)();
+	void (*EnumerateHUDWidgets)(void* userdata, void (*callback)(const char* pluginName, const char* windowId, const char* title, void* userdata));
+	void (*SetWindowAlphaOverride)(const char* pluginName, const char* windowId, float alpha);
 };
 #pragma pack(pop)
 
@@ -2787,7 +2792,8 @@ namespace FUCK
 											   GetStyleVarVec(ImGuiStyleVar_ItemSpacing),
 											   GetStyleVarVec(ImGuiStyleVar_ItemInnerSpacing),
 											   GetStyleVar(ImGuiStyleVar_FrameRounding),
-											   GetStyleVar(ImGuiStyleVar_GrabRounding) } :
+											   GetStyleVar(ImGuiStyleVar_GrabRounding)
+										   } :
 		                                   stack.front();
 		stack.push_back(base);
 
@@ -2944,6 +2950,37 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->RefreshTools();
+	}
+
+	/// @brief Whether the game has hidden its own HUD: the intro cart ride, cutscenes, dialogue and the like.
+	/// @note What kHideWithHUD windows follow. Updated once a frame. FUCK hiding the HUD under its own menu doesn't count.
+	inline bool IsGameHUDHidden() { return GetInterface() ? GetInterface()->IsGameHUDHidden() : false; }
+
+	/// @brief Calls a_func(pluginName, windowId, title) for each window flagged kHideWithHUD, open or not.
+	/// @note The strings are only valid during the call.
+	template <class F>
+	inline void EnumerateHUDWidgets(F a_func)
+	{
+		if (auto i = GetInterface()) {
+			i->EnumerateHUDWidgets(&a_func, [](const char* a_plugin, const char* a_id, const char* a_title, void* a_ud) {
+				(*static_cast<F*>(a_ud))(a_plugin, a_id, a_title);
+			});
+		}
+	}
+
+	/// @brief Fades a kHideWithHUD window by a_alpha (0-1). At 0 it's hidden and takes no input. Safe from any thread.
+	/// @note Lasts until cleared. Ignored while the FUCK menu is open if the window is kEditable.
+	/// Doesn't affect IsOpen(), DrawScreen* or RenderOverlay().
+	inline void SetWindowAlphaOverride(const char* pluginName, const char* windowId, float alpha)
+	{
+		if (auto i = GetInterface())
+			i->SetWindowAlphaOverride(pluginName, windowId, alpha);
+	}
+
+	/// @brief Removes a SetWindowAlphaOverride().
+	inline void ClearWindowAlphaOverride(const char* pluginName, const char* windowId)
+	{
+		SetWindowAlphaOverride(pluginName, windowId, -1.0f);
 	}
 }
 
