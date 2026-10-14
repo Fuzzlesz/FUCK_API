@@ -1,10 +1,11 @@
 #pragma once
 #include <imgui.h>
 
-#define FUCK_API_VERSION 6
+#define FUCK_API_VERSION 7
 
 // Optional extras:
 //   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
+//   FUCK_Camera.h       - Camera sessions, shared camera controls and applets (v7+)
 
 // ==================================================
 // [ OPTIONAL ] SIMPLEINI HELPERS
@@ -62,6 +63,56 @@ namespace FUCK
 		kCtrl  = 1,
 		kAlt   = 2
 	};
+
+	// --- Key Codes ---
+	// What every key function takes (IsInputDown, GetIconForKey, key badges, hotkeys).
+	// The keyboard's are its scan codes (RE::BSWin32KeyboardDevice::Key) and the mouse's are SKSE's,
+	// but a gamepad button is SKSE's code plus kGPBase again, so use these for the gamepad rather than SKSE's own
+	namespace Keys
+	{
+		inline constexpr std::uint32_t kMBBase = static_cast<std::uint32_t>(SKSE::InputMap::kMacro_MouseButtonOffset);  // 256
+		inline constexpr std::uint32_t kGPBase = static_cast<std::uint32_t>(SKSE::InputMap::kMacro_GamepadOffset);      // 266
+
+		/// @brief An SKSE key code as FUCK's, so a gamepad button from an SKSE event or an MCM setting can be passed on. Keyboard and mouse codes come back as they are.
+		constexpr std::uint32_t FromSKSE(std::uint32_t a_code) { return a_code >= kGPBase ? a_code + kGPBase : a_code; }
+
+		// Mouse
+		inline constexpr std::uint32_t kMouse_Left      = kMBBase + 0;
+		inline constexpr std::uint32_t kMouse_Right     = kMBBase + 1;
+		inline constexpr std::uint32_t kMouse_Middle    = kMBBase + 2;
+		inline constexpr std::uint32_t kMouse_WheelUp   = kMBBase + 8;
+		inline constexpr std::uint32_t kMouse_WheelDown = kMBBase + 9;
+
+		// Gamepad buttons
+		inline constexpr std::uint32_t kGP_Up    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_UP;
+		inline constexpr std::uint32_t kGP_Down  = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_DOWN;
+		inline constexpr std::uint32_t kGP_Left  = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_LEFT;
+		inline constexpr std::uint32_t kGP_Right = kGPBase + SKSE::InputMap::kGamepadButtonOffset_DPAD_RIGHT;
+		inline constexpr std::uint32_t kGP_Start = kGPBase + SKSE::InputMap::kGamepadButtonOffset_START;
+		inline constexpr std::uint32_t kGP_Back  = kGPBase + SKSE::InputMap::kGamepadButtonOffset_BACK;
+		inline constexpr std::uint32_t kGP_L3    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_LEFT_THUMB;
+		inline constexpr std::uint32_t kGP_R3    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_RIGHT_THUMB;
+		inline constexpr std::uint32_t kGP_LB    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_LEFT_SHOULDER;
+		inline constexpr std::uint32_t kGP_RB    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_RIGHT_SHOULDER;
+		inline constexpr std::uint32_t kGP_A     = kGPBase + SKSE::InputMap::kGamepadButtonOffset_A;
+		inline constexpr std::uint32_t kGP_B     = kGPBase + SKSE::InputMap::kGamepadButtonOffset_B;
+		inline constexpr std::uint32_t kGP_X     = kGPBase + SKSE::InputMap::kGamepadButtonOffset_X;
+		inline constexpr std::uint32_t kGP_Y     = kGPBase + SKSE::InputMap::kGamepadButtonOffset_Y;
+		inline constexpr std::uint32_t kGP_LT    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_LT;
+		inline constexpr std::uint32_t kGP_RT    = kGPBase + SKSE::InputMap::kGamepadButtonOffset_RT;
+
+		// Thumbstick axes, read with GetAnalogInput()
+		inline constexpr std::uint32_t kGP_LSX = kGPBase + 32;
+		inline constexpr std::uint32_t kGP_LSY = kGPBase + 33;
+		inline constexpr std::uint32_t kGP_RSX = kGPBase + 34;
+		inline constexpr std::uint32_t kGP_RSY = kGPBase + 35;
+
+		// Icons with no key of their own, for GetIconForKey() and key badges. Nothing ever presses these
+		inline constexpr std::uint32_t kIconBase       = 0x1000;
+		inline constexpr std::uint32_t kIcon_MouseMove = kIconBase + 0;  // a mouse being dragged
+		inline constexpr std::uint32_t kIcon_Wheel     = kIconBase + 1;  // the wheel either way
+		inline constexpr std::uint32_t kIcon_Triggers  = kIconBase + 2;  // LT and RT together, drawn for the gamepad in use
+	}
 
 	enum class BindResult
 	{
@@ -276,6 +327,15 @@ namespace FUCK
 			waitForRelease                = false;
 		}
 	};
+
+	// --- Optional Header Types ---
+	// Defined in FUCK_Camera.h
+	struct CameraSessionOptions;
+	struct CameraScreenRect;
+	struct CameraMove;
+	struct CameraOffsets;
+	struct CameraPose;
+	class ICameraClient;
 
 	// --- Extension Interfaces ---
 
@@ -687,6 +747,35 @@ struct FUCK_Interface
 	bool (*IsGameHUDHidden)();
 	void (*EnumerateHUDWidgets)(void* userdata, void (*callback)(const char* pluginName, const char* windowId, const char* title, void* userdata));
 	void (*SetWindowAlphaOverride)(const char* pluginName, const char* windowId, float alpha);
+
+	// Version 7
+	bool (*ComboWithKeyBadges)(const char*, int*, const char* const*, int, int, const std::uint32_t*, int*);
+	bool (*BeginCameraSession)(const FUCK::CameraSessionOptions*);
+	void (*EndCameraSession)(FUCK::ICameraClient*);
+	bool (*IsCameraSessionActive)(FUCK::ICameraClient*);
+	bool (*IsCameraSessionPaused)(FUCK::ICameraClient*);
+	void (*RevertCamera)(FUCK::ICameraClient*);
+	void (*UpdateCamera)(FUCK::ICameraClient*, float);
+	void (*MoveCamera)(const FUCK::CameraMove*, FUCK::InputDevice, float);
+	void (*ResetCamera)(FUCK::ICameraClient*);
+	bool (*IsCameraModified)(FUCK::ICameraClient*);
+	void (*SetCameraBodyFraming)(FUCK::ICameraClient*, bool, const FUCK::CameraScreenRect*, float);
+	bool (*IsCameraBodyFramed)(FUCK::ICameraClient*);
+	bool (*GetCameraOffsets)(FUCK::ICameraClient*, FUCK::CameraOffsets*);
+	bool (*SetCameraOffsets)(FUCK::ICameraClient*, const FUCK::CameraOffsets*);
+	bool (*GetCameraPose)(FUCK::ICameraClient*, FUCK::CameraPose*);
+	bool (*SetCameraPose)(FUCK::ICameraClient*, const FUCK::CameraPose*);
+	bool (*GetCameraFov)(float*, float*);
+	bool (*SaveCameraPreset)(FUCK::ICameraClient*, const char*, bool);
+	bool (*LoadCameraPreset)(FUCK::ICameraClient*, const char*);
+	bool (*DeleteCameraPreset)(FUCK::ICameraClient*, const char*);
+	int (*GetCameraPresetCount)(FUCK::ICameraClient*);
+	const char* (*GetCameraPresetName)(FUCK::ICameraClient*, int);
+	bool (*DrawCameraPresets)(FUCK::ICameraClient*, float);
+	bool (*DrawCameraSettings)(int);
+	void (*DrawCameraHelpMarker)(int, const char*, const char*);
+	void (*SetActorFrozen)(const char*, RE::Actor*, bool);
+	bool (*IsActorFrozen)(RE::Actor*);
 };
 #pragma pack(pop)
 
@@ -1784,6 +1873,12 @@ namespace FUCK
 
 #ifdef FUCK_API_ENABLE_SIMPLEINI
 
+	namespace INI
+	{
+		template <class T>
+		class Fields;
+	}
+
 	/// @brief Convenience wrapper for Plugin INI Loading/Saving.
 	class PluginSettings
 	{
@@ -1808,6 +1903,19 @@ namespace FUCK
 				return;
 			if (auto* i = GetInterface())
 				i->SavePluginINI(_pluginName, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
+		}
+
+		/// @brief Loads or saves a settings struct through its list of fields, see INI::Fields.
+		template <class T>
+		void Load(const INI::Fields<T>& a_fields, T& a_values) const
+		{
+			Load([&](CSimpleIniA& ini) { a_fields.Load(ini, a_values); });
+		}
+
+		template <class T>
+		void Save(const INI::Fields<T>& a_fields, const T& a_values) const
+		{
+			Save([&](CSimpleIniA& ini) { a_fields.Save(ini, a_values); });
 		}
 
 		/// @brief Loads the default shipped INI, ignoring user settings.
@@ -1916,6 +2024,65 @@ namespace FUCK
 			const char* val = ini.GetValue(sec, key, defVal);
 			strncpy_s(dest, N, val, _TRUNCATE);
 		}
+
+		/// @brief A settings struct's INI keys, each named once with the member it fills. The defaults are the struct's own initialisers,
+		/// and a value left at its default is taken out of the user's INI rather than written.
+		/// @code
+		/// struct Values { bool enabled = true; float speed = 1.0f; };
+		///
+		/// const FUCK::INI::Fields<Values> fields{ "General", {
+		///     { "bEnable", &Values::enabled },
+		///     { "fSpeed",  &Values::speed   },
+		/// } };
+		///
+		/// settings.Load(fields, values);
+		/// settings.Save(fields, values);
+		/// @endcode
+		template <class T>
+		class Fields
+		{
+		public:
+			struct Field
+			{
+				const char*                                                                         key;
+				std::variant<bool T::*, int T::*, std::uint32_t T::*, float T::*, std::string T::*> member;
+			};
+
+			Fields(const char* a_section, std::initializer_list<Field> a_fields) :
+				_section(a_section), _fields(a_fields) {}
+
+			void Load(const CSimpleIniA& ini, T& a_values) const
+			{
+				const T def{};
+				for (const auto& field : _fields) {
+					std::visit([&](auto member) { Read(ini, field.key, a_values.*member, def.*member); }, field.member);
+				}
+			}
+
+			void Save(CSimpleIniA& ini, const T& a_values) const
+			{
+				const T def{};
+				for (const auto& field : _fields) {
+					std::visit([&](auto member) { Write(ini, field.key, a_values.*member, def.*member); }, field.member);
+				}
+			}
+
+		private:
+			void Read(const CSimpleIniA& ini, const char* key, bool& val, bool defVal) const { val = LoadBool(ini, _section, key, defVal); }
+			void Read(const CSimpleIniA& ini, const char* key, float& val, float defVal) const { val = LoadFloat(ini, _section, key, defVal); }
+			void Read(const CSimpleIniA& ini, const char* key, std::string& val, const std::string& defVal) const { val = ini.GetValue(_section, key, defVal.c_str()); }
+			template <class I>
+			void Read(const CSimpleIniA& ini, const char* key, I& val, I defVal) const { val = LoadInt(ini, _section, key, defVal); }
+
+			void Write(CSimpleIniA& ini, const char* key, bool val, bool defVal) const { SaveBool(ini, _section, key, val, defVal); }
+			void Write(CSimpleIniA& ini, const char* key, float val, float defVal) const { SaveDouble(ini, _section, key, val, defVal, "%g"); }
+			void Write(CSimpleIniA& ini, const char* key, const std::string& val, const std::string& defVal) const { SaveString(ini, _section, key, val.c_str(), defVal.c_str()); }
+			template <class I>
+			void Write(CSimpleIniA& ini, const char* key, I val, I defVal) const { SaveInt(ini, _section, key, val, defVal); }
+
+			const char*        _section;
+			std::vector<Field> _fields;
+		};
 	}
 #endif  // FUCK_API_ENABLE_SIMPLEINI
 
@@ -2981,6 +3148,38 @@ namespace FUCK
 	inline void ClearWindowAlphaOverride(const char* pluginName, const char* windowId)
 	{
 		SetWindowAlphaOverride(pluginName, windowId, -1.0f);
+	}
+
+	// --------------------------------------------------
+	// Version 7
+	// --------------------------------------------------
+
+	/// @brief A searchable combo for entries that each have a key bound to them, such as presets with shortcuts.
+	/// Each row can show its key's icon at the right-hand end, and the caller is told which row is under the cursor, so a key pressed over a row can be bound to it.
+	/// Unlike ComboWithFilter there are no favourites, so entries keep the order given unless the search box is in use.
+	/// @param badgeKeys One key code per item (items_count long), keyboard, mouse or gamepad, as GetIconForKey() takes.
+	/// 0 for an item with no key, or nullptr to draw no icons at all.
+	/// @param hoveredItem Receives the index into items (not into the filtered list) of the row under the mouse or gamepad focus while the list is open, else -1.
+	/// nullptr if not needed.
+	/// @return True on the frame an item is picked, as with Combo().
+	inline bool ComboWithKeyBadges(const char* label, int* current_item, const char* const* items, int items_count, const std::uint32_t* badgeKeys, int* hoveredItem, int popup_max_height_in_items = -1)
+	{
+		return GetInterface() ? GetInterface()->ComboWithKeyBadges(label, current_item, items, items_count, popup_max_height_in_items, badgeKeys, hoveredItem) : false;
+	}
+
+	/// @brief Holds an actor still: no animation, AI or pushing, with the eyes kept open and looking ahead. Works whether or not the game is paused.
+	/// @note The actor stays frozen while any plugin holds it, so releasing only lets go of this plugin's hold. Every hold is let go before a save loads.
+	inline void SetActorFrozen(RE::Actor* actor, bool frozen)
+	{
+		if (auto i = GetInterface())
+			i->SetActorFrozen(FUCK::g_pluginName, actor, frozen);
+	}
+
+	/// @brief Whether any plugin is holding the actor frozen.
+	inline bool IsActorFrozen(RE::Actor* actor)
+	{
+		auto i = GetInterface();
+		return i ? i->IsActorFrozen(actor) : false;
 	}
 }
 
