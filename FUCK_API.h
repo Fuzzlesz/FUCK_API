@@ -1905,17 +1905,17 @@ namespace FUCK
 				i->SavePluginINI(_pluginName, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
 		}
 
-		/// @brief Loads or saves a settings struct through its list of fields, see INI::Fields.
+		/// @brief Loads or saves a settings struct through its list of fields, see INI::Fields. Defaults are the struct's own unless passed.
 		template <class T>
-		void Load(const INI::Fields<T>& a_fields, T& a_values) const
+		void Load(const INI::Fields<T>& a_fields, T& a_values, const T& a_defaults = T{}) const
 		{
-			Load([&](CSimpleIniA& ini) { a_fields.Load(ini, a_values); });
+			Load([&](CSimpleIniA& ini) { a_fields.Load(ini, a_values, a_defaults); });
 		}
 
 		template <class T>
-		void Save(const INI::Fields<T>& a_fields, const T& a_values) const
+		void Save(const INI::Fields<T>& a_fields, const T& a_values, const T& a_defaults = T{}) const
 		{
-			Save([&](CSimpleIniA& ini) { a_fields.Save(ini, a_values); });
+			Save([&](CSimpleIniA& ini) { a_fields.Save(ini, a_values, a_defaults); });
 		}
 
 		/// @brief Loads the default shipped INI, ignoring user settings.
@@ -2025,8 +2025,9 @@ namespace FUCK
 			strncpy_s(dest, N, val, _TRUNCATE);
 		}
 
-		/// @brief A settings struct's INI keys, each named once with the member it fills. The defaults are the struct's own initialisers,
-		/// and a value left at its default is taken out of the user's INI rather than written.
+		/// @brief A settings struct's INI keys, each named once with the member it fills. Defaults are the struct's own initialisers
+		/// unless others are passed, and a value left at its default is taken out of the user's INI rather than written.
+		/// Members can be bool, float, double, std::string, or any integer or enum type.
 		/// @code
 		/// struct Values { bool enabled = true; float speed = 1.0f; };
 		///
@@ -2044,41 +2045,71 @@ namespace FUCK
 		public:
 			struct Field
 			{
-				const char*                                                                         key;
-				std::variant<bool T::*, int T::*, std::uint32_t T::*, float T::*, std::string T::*> member;
+				template <class M>
+				Field(const char* a_key, M T::*a_member) :
+					key(a_key),
+					load([a_member](const CSimpleIniA& ini, const char* sec, const char* key, T& values, const T& defaults) {
+						Read(ini, sec, key, values.*a_member, defaults.*a_member);
+					}),
+					save([a_member](CSimpleIniA& ini, const char* sec, const char* key, const T& values, const T& defaults) {
+						Write(ini, sec, key, values.*a_member, defaults.*a_member);
+					})
+				{}
+
+				const char*                                                                     key;
+				std::function<void(const CSimpleIniA&, const char*, const char*, T&, const T&)> load;
+				std::function<void(CSimpleIniA&, const char*, const char*, const T&, const T&)> save;
 			};
 
 			Fields(const char* a_section, std::initializer_list<Field> a_fields) :
 				_section(a_section), _fields(a_fields) {}
 
-			void Load(const CSimpleIniA& ini, T& a_values) const
+			void Load(const CSimpleIniA& ini, T& a_values, const T& a_defaults = T{}) const
 			{
-				const T def{};
 				for (const auto& field : _fields) {
-					std::visit([&](auto member) { Read(ini, field.key, a_values.*member, def.*member); }, field.member);
+					field.load(ini, _section, field.key, a_values, a_defaults);
 				}
 			}
 
-			void Save(CSimpleIniA& ini, const T& a_values) const
+			void Save(CSimpleIniA& ini, const T& a_values, const T& a_defaults = T{}) const
 			{
-				const T def{};
 				for (const auto& field : _fields) {
-					std::visit([&](auto member) { Write(ini, field.key, a_values.*member, def.*member); }, field.member);
+					field.save(ini, _section, field.key, a_values, a_defaults);
 				}
 			}
 
 		private:
-			void Read(const CSimpleIniA& ini, const char* key, bool& val, bool defVal) const { val = LoadBool(ini, _section, key, defVal); }
-			void Read(const CSimpleIniA& ini, const char* key, float& val, float defVal) const { val = LoadFloat(ini, _section, key, defVal); }
-			void Read(const CSimpleIniA& ini, const char* key, std::string& val, const std::string& defVal) const { val = ini.GetValue(_section, key, defVal.c_str()); }
-			template <class I>
-			void Read(const CSimpleIniA& ini, const char* key, I& val, I defVal) const { val = LoadInt(ini, _section, key, defVal); }
+			template <class M>
+			static void Read(const CSimpleIniA& ini, const char* sec, const char* key, M& val, const M& defVal)
+			{
+				if constexpr (std::is_same_v<M, bool>) {
+					val = LoadBool(ini, sec, key, defVal);
+				} else if constexpr (std::is_floating_point_v<M>) {
+					val = static_cast<M>(ini.GetDoubleValue(sec, key, static_cast<double>(defVal)));
+				} else if constexpr (std::is_same_v<M, std::string>) {
+					val = ini.GetValue(sec, key, defVal.c_str());
+				} else {
+					static_assert(std::is_integral_v<M> || std::is_enum_v<M>, "FUCK::INI::Fields: unsupported member type.");
+					val = LoadInt(ini, sec, key, defVal);
+				}
+			}
 
-			void Write(CSimpleIniA& ini, const char* key, bool val, bool defVal) const { SaveBool(ini, _section, key, val, defVal); }
-			void Write(CSimpleIniA& ini, const char* key, float val, float defVal) const { SaveDouble(ini, _section, key, val, defVal, "%g"); }
-			void Write(CSimpleIniA& ini, const char* key, const std::string& val, const std::string& defVal) const { SaveString(ini, _section, key, val.c_str(), defVal.c_str()); }
-			template <class I>
-			void Write(CSimpleIniA& ini, const char* key, I val, I defVal) const { SaveInt(ini, _section, key, val, defVal); }
+			template <class M>
+			static void Write(CSimpleIniA& ini, const char* sec, const char* key, const M& val, const M& defVal)
+			{
+				if constexpr (std::is_same_v<M, bool>) {
+					SaveBool(ini, sec, key, val, defVal);
+				} else if constexpr (std::is_floating_point_v<M>) {
+					SaveDouble(ini, sec, key, static_cast<double>(val), static_cast<double>(defVal), "%g");
+				} else if constexpr (std::is_same_v<M, std::string>) {
+					SaveString(ini, sec, key, val.c_str(), defVal.c_str());
+				} else if constexpr (std::is_enum_v<M>) {
+					using U = std::underlying_type_t<M>;
+					SaveInt(ini, sec, key, static_cast<U>(val), static_cast<U>(defVal));
+				} else {
+					SaveInt(ini, sec, key, val, defVal);
+				}
+			}
 
 			const char*        _section;
 			std::vector<Field> _fields;
