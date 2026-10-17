@@ -282,6 +282,17 @@ namespace FUCK
 		kNoModifiers     = 1 << 4
 	};
 
+	/// @brief What FUCK is taking input for, from GetInputCaptureState().
+	enum class InputCaptureState : int
+	{
+		kNone      = 0,
+		kMenu      = 1 << 0,  // FUCK's main menu is open
+		kGameInput = 1 << 1,  // FUCK is keeping input from the game: the menu or a window without kPassInputToGame is open, the mouse is on a window's frame, or a camera session holds the controls
+		kKeyboard  = 1 << 2,  // a FUCK window wants the keyboard, e.g. a focused widget
+		kMouse     = 1 << 3,  // a FUCK window wants the mouse, e.g. it's under the cursor
+		kTextInput = 1 << 4   // a FUCK text field is being typed in
+	};
+
 // --- Bitwise Operator Macro ---
 #define FUCK_DEFINE_ENUM_BITWISE_OPERATORS(Type)                                                                    \
 	inline Type  operator|(Type a, Type b) { return static_cast<Type>(static_cast<int>(a) | static_cast<int>(b)); } \
@@ -305,6 +316,7 @@ namespace FUCK
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(PopupFlags)
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(HotkeyFlags)
 	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(ColorEditFlags)
+	FUCK_DEFINE_ENUM_BITWISE_OPERATORS(InputCaptureState)
 
 #undef FUCK_DEFINE_ENUM_BITWISE_OPERATORS
 
@@ -798,6 +810,7 @@ struct FUCK_Interface
 	bool (*IsActorFrozen)(RE::Actor*);
 	void* (*RequestImage)(const FUCK::ImageRequest*);
 	int (*GetImageState)(void*);
+	int (*GetInputCaptureState)();
 };
 #pragma pack(pop)
 
@@ -3276,6 +3289,15 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i && image ? static_cast<ImageState>(i->GetImageState(image)) : ImageState::kNone;
+	}
+
+	/// @brief What FUCK is taking input for this frame, so a plugin's own hotkeys can stand aside, e.g. while typing in a FUCK text field.
+	/// Test it with &, e.g. GetInputCaptureState() & InputCaptureState::kTextInput. Call it from the main thread, as from an input sink or frame hook.
+	/// @return kNone before FUCK's renderer is ready.
+	inline InputCaptureState GetInputCaptureState()
+	{
+		auto i = GetInterface();
+		return i ? static_cast<InputCaptureState>(i->GetInputCaptureState()) : InputCaptureState::kNone;
 	}
 }
 
