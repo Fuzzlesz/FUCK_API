@@ -180,7 +180,7 @@ namespace FUCK
 		// With kRememberCamera, a remembered camera is used instead of this framing
 		bool             startFramed   = false;
 		CameraScreenRect framingRect;
-		float            framingMargin = 1.0f;
+		float            framingMargin = 0.0f;  // 0 for FUCK's default room around the body. See SetCameraBodyFraming()
 	};
 
 	enum class CameraSettingsFlags : int
@@ -278,8 +278,10 @@ namespace FUCK
 
 	/// @brief Swoops the camera to frame the subject's whole body into a screen area, or back again.
 	/// Already framed, a different area or margin re-frames in place without the swoop, keeping the camera's offsets.
-	/// @param margin Scales the body's pelvis-to-floor height when fitting it to the area. 1.0 is a tight fit, larger leaves more room.
-	inline void SetCameraBodyFraming(ICameraClient* client, bool framed, const CameraScreenRect& rect, float margin)
+	/// @param rect The part of the screen to frame the body in, e.g. above a menu's bottom bar.
+	/// @param margin Optional. The room around the body, as a scale on its height: 1 fits it exactly, larger leaves more room. 0 uses FUCK's default,
+	/// which suits most screens, as the area already keeps the body clear of a bottom bar. Pass one only for a deliberately different shot, e.g. a tight portrait.
+	inline void SetCameraBodyFraming(ICameraClient* client, bool framed, const CameraScreenRect& rect, float margin = 0.0f)
 	{
 		if (auto i = GetInterface())
 			i->SetCameraBodyFraming(client, framed, &rect, margin);
