@@ -328,6 +328,26 @@ namespace FUCK
 		}
 	};
 
+	// --- Images ---
+	/// @brief Options for RequestImage().
+	struct ImageRequest
+	{
+		std::uint32_t size       = sizeof(ImageRequest);  // Lets later versions add options, leave as is
+		const char*   path       = nullptr;               // The image file, as for LoadImage(). Copied
+		float         scale      = 1.0f;                  // e.g. 0.25 for a thumbnail
+		const char*   cachePath  = nullptr;               // Optional. A copy saved here is loaded instead, and the scaled image is saved here when there's none. Copied
+		bool          background = true;                  // Loads on a background thread. false loads before returning
+		bool          urgent     = false;                 // Background only: goes ahead of other waiting loads, e.g. the image being viewed
+	};
+
+	enum class ImageState
+	{
+		kNone,     // no image
+		kLoading,  // waiting or loading in the background
+		kReady,    // drawn by FUCK's image functions
+		kFailed    // the file couldn't be loaded
+	};
+
 	// --- Optional Header Types ---
 	// Defined in FUCK_Camera.h
 	struct CameraSessionOptions;
@@ -776,6 +796,8 @@ struct FUCK_Interface
 	void (*DrawCameraHelpMarker)(int, const char*, const char*);
 	void (*SetActorFrozen)(const char*, RE::Actor*, bool);
 	bool (*IsActorFrozen)(RE::Actor*);
+	void* (*RequestImage)(const FUCK::ImageRequest*);
+	int (*GetImageState)(void*);
 };
 #pragma pack(pop)
 
@@ -1807,14 +1829,41 @@ namespace FUCK
 		Image(const Image&)            = delete;
 		Image& operator=(const Image&) = delete;
 
+		/// @brief An image loaded through RequestImage(), e.g. in the background. Its size is known once it's ready.
+		static Image Request(const ImageRequest& a_request)
+		{
+			Image image;
+			if (auto i = GetInterface()) {
+				image._handle = i->RequestImage(&a_request);
+				if (image._handle)
+					i->GetImageInfo(image._handle, &image._width, &image._height);
+			}
+			return image;
+		}
+
+		/// @brief Whether there's an image, loaded or still loading. See GetState() for which.
 		[[nodiscard]] bool        IsLoaded() const { return _handle != nullptr; }
+		[[nodiscard]] ImageState  GetState() const
+		{
+			auto i = GetInterface();
+			return i && _handle ? static_cast<ImageState>(i->GetImageState(_handle)) : ImageState::kNone;
+		}
+		[[nodiscard]] bool        IsReady() const { return GetState() == ImageState::kReady; }
 		[[nodiscard]] ImTextureID GetID() const { return (ImTextureID)_handle; }
 		operator ImTextureID() const { return (ImTextureID)_handle; }
 		operator void*() const { return _handle; }
 
-		[[nodiscard]] float  GetWidth() const { return _width; }
-		[[nodiscard]] float  GetHeight() const { return _height; }
-		[[nodiscard]] ImVec2 GetSize() const { return ImVec2(_width, _height); }
+		[[nodiscard]] float  GetWidth() const { return GetSize().x; }
+		[[nodiscard]] float  GetHeight() const { return GetSize().y; }
+		[[nodiscard]] ImVec2 GetSize() const
+		{
+			// A background load's size is read once it's ready
+			if (_handle && _width == 0.0f) {
+				if (auto i = GetInterface())
+					i->GetImageInfo(_handle, &_width, &_height);
+			}
+			return ImVec2(_width, _height);
+		}
 
 		void Reset()
 		{
@@ -1828,9 +1877,9 @@ namespace FUCK
 		}
 
 	private:
-		void* _handle = nullptr;
-		float _width  = 0.0f;
-		float _height = 0.0f;
+		void*         _handle = nullptr;
+		mutable float _width  = 0.0f;
+		mutable float _height = 0.0f;
 	};
 
 	/// @brief Draws an image rotated about its centre, in screen space.
@@ -3211,6 +3260,22 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->IsActorFrozen(actor) : false;
+	}
+
+	/// @brief Loads an image at a scale, in the background or at once, optionally keeping a cached copy, e.g. a gallery's thumbnails.
+	/// Hold it in FUCK::Image (see Image::Request), which releases it. Releasing one still waiting cancels its load.
+	/// @return The handle, drawn by FUCK's image functions once ready and skipped until then. nullptr if the path is missing, or a load done at once failed.
+	inline void* RequestImage(const ImageRequest& request)
+	{
+		auto i = GetInterface();
+		return i ? i->RequestImage(&request) : nullptr;
+	}
+
+	/// @brief Where a requested image is up to. Images from LoadImage() are always kReady.
+	inline ImageState GetImageState(void* image)
+	{
+		auto i = GetInterface();
+		return i && image ? static_cast<ImageState>(i->GetImageState(image)) : ImageState::kNone;
 	}
 }
 
