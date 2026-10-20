@@ -14,7 +14,7 @@
 //   Right-drag, RB + X/Y       turn the subject
 //
 // While the controls are in use, FUCK keeps their input from the game so the two don't both act on it. It holds:
-//   - the middle or right mouse button, or RB, while held
+//   - the middle or right mouse button, or RB, while held. A quick tap of RB still reaches the game, so menus keep their bumper
 //   - Ctrl, but only together with the camera's keys or the wheel
 // Ctrl and Shift on their own still reach the game, so other mods' shortcuts keep working.
 //
