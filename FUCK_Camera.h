@@ -263,6 +263,7 @@ namespace FUCK
 	}
 
 	/// @brief Clears all offsets and body framing, and restores the FOV, keeping the session.
+	/// kThirdPerson also turns the subject back to how it faced as the session began.
 	inline void ResetCamera(ICameraClient* client)
 	{
 		if (auto i = GetInterface())
