@@ -82,7 +82,7 @@ namespace FUCK
 		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
-		kRunPhysics       = 1 << 10  // FSMP's cloth and hair keep moving while the game is paused, e.g. by a menu. Does nothing without FSMP
+		kRunPhysics       = 1 << 10  // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
