@@ -264,14 +264,14 @@ namespace FUCK
 	}
 
 	/// @brief Clears all offsets and body framing, and restores the FOV, keeping the session.
-	/// kThirdPerson also turns the subject back to how it faced as the session began.
+	/// Also turns the subject back to how it faced as the session began.
 	inline void ResetCamera(ICameraClient* client)
 	{
 		if (auto i = GetInterface())
 			i->ResetCamera(client);
 	}
 
-	/// @brief Whether the camera has been moved from where the game puts it.
+	/// @brief Whether the camera has been moved from where the game puts it, or the subject turned from how it faced as the session began.
 	inline bool IsCameraModified(ICameraClient* client)
 	{
 		auto i = GetInterface();
