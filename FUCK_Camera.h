@@ -82,7 +82,10 @@ namespace FUCK
 		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
-		kRunPhysics       = 1 << 10  // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
+		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
+		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
+		kNoTurning        = 1 << 12, // Right-drag and RB+X/Y don't turn the subject, e.g. for one seated or at a chest, where turning would look wrong
+		kCameraToFront    = 1 << 13  // Third-person base: the camera starts round at the subject's front, the mirror of kFaceCamera, or looking down along them from their feet when lying down (IsLyingDown)
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -407,5 +410,15 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->DrawCameraHelpMarker(static_cast<int>(flags), extraKBM, extraGP);
+	}
+
+	/// @brief Whether an actor is lying down, e.g. in a bed: their head less than 20 units above their pelvis. Body framing then measures them
+	/// along their length, from the feet to the top of the head, rather than up from the floor, so check this to choose a view that suits it.
+	inline bool IsLyingDown(RE::TESObjectREFR* actor)
+	{
+		constexpr float LYING_HEIGHT = 20.0f;
+		const auto      head   = actor ? actor->GetNodeByName("NPC Head [Head]") : nullptr;
+		const auto      pelvis = actor ? actor->GetNodeByName("NPC Pelvis [Pelv]") : nullptr;
+		return head && pelvis && head->world.translate.z - pelvis->world.translate.z < LYING_HEIGHT;
 	}
 }
