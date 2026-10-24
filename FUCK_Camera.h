@@ -79,7 +79,7 @@ namespace FUCK
 		kZoomAcceleration = 1 << 4,  // Held zoom speeds up, for crossing long distances
 		kPresetHotkeys    = 1 << 5,  // Ctrl+1-9 loads the preset bound to that number. Numbers are bound in the presets list
 		kFaceCamera       = 1 << 6,  // The subject turns to face the camera as the session begins
-		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it
+		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
 		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
