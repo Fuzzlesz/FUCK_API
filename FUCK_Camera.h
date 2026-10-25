@@ -86,7 +86,8 @@ namespace FUCK
 		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
 		kNoTurning        = 1 << 12, // Right-drag and RB+X/Y don't turn the subject, e.g. for one seated or at a chest, where turning would look wrong
 		kCameraToFront    = 1 << 13, // Third-person base: the camera starts round at the subject's front, the mirror of kFaceCamera, or looking down along them from their feet when lying down (IsLyingDown)
-		kRememberFacing   = 1 << 14  // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
+		kRememberFacing   = 1 << 14, // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
+		kFreshBase        = 1 << 15  // Third-person base: the camera starts afresh behind the subject, or in front with kCameraToFront, rather than from where the game's camera was, so neither how the player was looking nor another mod's camera (a conversation camera) carries over. Body framing sets the distance
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
