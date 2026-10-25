@@ -71,23 +71,33 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
+		// Next bit: 17
 		kNone             = 0,
+
+		// The session and the game
 		kBlockControls    = 1 << 0,  // The game gets no input. FUCK's controls and hotkeys still work
 		kDisableSaving    = 1 << 1,  // Saving is off for the session, so a save can't catch the camera mid-move. As Photo Mode does
 		kFreezeTime       = 1 << 2,  // Soft pause, so the world holds still for the session
+		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
+		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
+
+		// Controls
 		kPivotAtCamera    = 1 << 3,  // Orbit turns the camera in place instead of circling the subject
 		kZoomAcceleration = 1 << 4,  // Held zoom speeds up, for crossing long distances
 		kPresetHotkeys    = 1 << 5,  // Ctrl+1-9 loads the preset bound to that number. Numbers are bound in the presets list
-		kFaceCamera       = 1 << 6,  // The subject turns to face the camera as the session begins
-		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept, without kRememberFacing
-		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
-		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
-		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
 		kNoTurning        = 1 << 12, // Right-drag and RB+X/Y don't turn the subject, e.g. for one seated or at a chest, where turning would look wrong
+
+		// Where the camera starts
+		kFaceCamera       = 1 << 6,  // The subject turns to face the camera as the session begins
 		kCameraToFront    = 1 << 13, // Third-person base: the camera starts round at the subject's front, the mirror of kFaceCamera, or looking down along them from their feet when lying down (IsLyingDown)
+		kFreshBase        = 1 << 15, // Third-person base: the camera starts afresh behind the subject, or in front with kCameraToFront, rather than from where the game's camera was, so neither how the player was looking nor another mod's camera (a conversation camera) carries over. Body framing sets the distance
+		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept, without kRememberFacing
 		kRememberFacing   = 1 << 14, // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
-		kFreshBase        = 1 << 15  // Third-person base: the camera starts afresh behind the subject, or in front with kCameraToFront, rather than from where the game's camera was, so neither how the player was looking nor another mod's camera (a conversation camera) carries over. Body framing sets the distance
+
+		// Body framing
+		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
+		kFrameUpperBody   = 1 << 16  // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
