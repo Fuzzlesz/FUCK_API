@@ -197,6 +197,9 @@ namespace FUCK
 		bool             startFramed   = false;
 		CameraScreenRect framingRect;
 		float            framingMargin = 0.0f;  // 0 for FUCK's default room around the body. See SetCameraBodyFraming()
+
+		// Framed alongside the subject, so both fit the framing area side by side. Never orbited or turned. nullptr for none
+		RE::Actor* alsoFramed = nullptr;
 	};
 
 	enum class CameraSettingsFlags : int
