@@ -2335,6 +2335,14 @@ namespace FUCK
 		}
 	}
 
+	/// @brief A packed IM_COL32 colour as floats, without needing ImGui's own conversion linked in.
+	inline ImVec4 ColorU32ToFloat4(ImU32 a_color)
+	{
+		constexpr float s = 1.0f / 255.0f;
+		return { ((a_color >> IM_COL32_R_SHIFT) & 0xFF) * s, ((a_color >> IM_COL32_G_SHIFT) & 0xFF) * s, ((a_color >> IM_COL32_B_SHIFT) & 0xFF) * s,
+			((a_color >> IM_COL32_A_SHIFT) & 0xFF) * s };
+	}
+
 	/// @brief Rotates a point about a centre, clockwise in screen space.
 	inline ImVec2 RotatePoint(const ImVec2& a_point, const ImVec2& a_center, float a_degrees)
 	{
@@ -2360,7 +2368,7 @@ namespace FUCK
 				RotatePoint(max, center, rotation),
 				RotatePoint({ min.x, max.y }, center, rotation)
 			};
-			ImVec4 colV4 = ImGui::ColorConvertU32ToFloat4(boundsColor);
+			ImVec4 colV4 = ColorU32ToFloat4(boundsColor);
 			for (int i = 0; i < 4; ++i) {
 				if (screenSpace)
 					DrawScreenLine(corners[i], corners[(i + 1) % 4], boundsColor, thickness);
@@ -2370,7 +2378,7 @@ namespace FUCK
 		} else if (screenSpace) {
 			DrawScreenRect(min, max, boundsColor, 0.0f, thickness);
 		} else {
-			ImVec4 colV4 = ImGui::ColorConvertU32ToFloat4(boundsColor);
+			ImVec4 colV4 = ColorU32ToFloat4(boundsColor);
 			DrawRect(min, max, colV4, 0.0f, thickness);
 		}
 
@@ -2382,7 +2390,7 @@ namespace FUCK
 			DrawScreenLine({ anchor.x - crossSize, anchor.y }, { anchor.x + crossSize, anchor.y }, anchorColor, 2.0f);
 			DrawScreenLine({ anchor.x, anchor.y - crossSize }, { anchor.x, anchor.y + crossSize }, anchorColor, 2.0f);
 		} else {
-			ImVec4 anchorV4 = ImGui::ColorConvertU32ToFloat4(anchorColor);
+			ImVec4 anchorV4 = ColorU32ToFloat4(anchorColor);
 			DrawLine({ anchor.x - crossSize, anchor.y }, { anchor.x + crossSize, anchor.y }, anchorV4, 2.0f);
 			DrawLine({ anchor.x, anchor.y - crossSize }, { anchor.x, anchor.y + crossSize }, anchorV4, 2.0f);
 		}
