@@ -154,7 +154,7 @@ namespace FUCK
 		kExtendBorder        = 1 << 10,  // Draws border outside window bounds
 		kNoResize            = 1 << 11,  // Prevents manual resizing by the user
 		kNoMove              = 1 << 12,  // Prevents manual dragging by the user
-		kAutoResize          = 1 << 13,  // Sizes automatically to contents
+		kAutoResize          = 1 << 13,  // Sizes automatically to contents, decorated or not. Items with no set width take one from the window, so give sliders and the like their own (SetNextItemWidth), or a Dummy for a least width
 		kIgnoreUserScale     = 1 << 14,  // Ignores global UI scaling slider
 		kCustomPosition      = 1 << 15,  // Opts out of Host-managed pos saving/loading
 		kRenderDuringTM      = 1 << 16,  // Renders when 'tm' (Toggle Menus) is set
