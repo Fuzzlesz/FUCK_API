@@ -200,6 +200,9 @@ namespace FUCK
 
 		// Framed alongside the subject, so both fit the framing area side by side. Never orbited or turned. nullptr for none
 		RE::Actor* alsoFramed = nullptr;
+
+		// Offset bases: the FOV the session opens at, in degrees, which ResetCamera() goes back to. A remembered FOV wins over it. 0 for the game's
+		float startFov = 0.0f;
 	};
 
 	enum class CameraSettingsFlags : int
@@ -281,7 +284,7 @@ namespace FUCK
 			i->MoveCamera(&move, device, speedMult);
 	}
 
-	/// @brief Clears all offsets and body framing, and restores the FOV, keeping the session.
+	/// @brief Clears all offsets and body framing, and puts the FOV back as the session began (see startFov), keeping the session.
 	/// Also turns the subject back to how it faced as the session began.
 	inline void ResetCamera(ICameraClient* client)
 	{
