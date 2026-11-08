@@ -824,6 +824,9 @@ struct FUCK_Interface
 	void (*SetHardPauseBy)(const char*, bool);
 	void (*SetSoftPauseBy)(const char*, bool);
 	void (*MoveCameraEx)(const FUCK::CameraMoveEx*, FUCK::InputDevice, float);
+	void (*SavePluginSettings)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata, void (*callback)(FUCK_SIMPLEINI_TYPE&, void*));
+	void (*AddSettingsListener)(void* userdata, void (*callback)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata));
+	void (*RemoveSettingsListener)(void* userdata);
 };
 #pragma pack(pop)
 
@@ -1960,6 +1963,7 @@ namespace FUCK
 	{
 	public:
 		// --- Automatically defaults to the globally registered plugin name ---
+		// Another plugin's name reads and writes its settings instead, and it hears of a save through AddSettingsListener()
 		PluginSettings(const char* a_pluginName = FUCK::g_pluginName) :
 			_pluginName(a_pluginName) {}
 
@@ -1978,7 +1982,7 @@ namespace FUCK
 			if (!a_func)
 				return;
 			if (auto* i = GetInterface())
-				i->SavePluginINI(_pluginName, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
+				i->SavePluginSettings(_pluginName, g_pluginName, false, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
 		}
 
 		/// @brief Loads or saves a settings struct through its list of fields, see INI::Fields. Defaults are the struct's own unless passed.
@@ -2016,7 +2020,7 @@ namespace FUCK
 			if (!a_func)
 				return;
 			if (auto* i = GetInterface())
-				i->SavePluginKeybinds(_pluginName, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
+				i->SavePluginSettings(_pluginName, g_pluginName, true, &a_func, [](CSimpleIniA& ini, void* ud) { (*static_cast<INIFunc*>(ud))(ini); });
 		}
 
 		void LoadKeybindsDefaults(INIFunc a_func) const
@@ -3334,6 +3338,21 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden, hidden && withCard);
+	}
+
+	/// @brief Called after any plugin's settings or keybinds are saved through PluginSettings, by their own plugin or another, e.g. so yours
+	/// reload when another plugin's panel changed them. Your own saves come through too, so check savedBy.
+	/// @param callback pluginName is whose file was saved and savedBy who saved it, nullptr if unknown. keybinds
+	/// for the keybinds file. Called on the thread that saved, once the file's written.
+	inline void AddSettingsListener(void* userdata, void (*callback)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata))
+	{
+		if (auto i = GetInterface())
+			i->AddSettingsListener(userdata, callback);
+	}
+	inline void RemoveSettingsListener(void* userdata)
+	{
+		if (auto i = GetInterface())
+			i->RemoveSettingsListener(userdata);
 	}
 }
 
