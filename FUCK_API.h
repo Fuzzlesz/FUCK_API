@@ -816,6 +816,7 @@ struct FUCK_Interface
 	bool (*IsLineClear)(RE::TESObjectREFR*, const RE::NiPoint3*, const RE::NiPoint3*, const RE::TESObjectREFR* const*, std::uint32_t);
 	void (*UpdateObstructions)(const char*, RE::Actor*, RE::Actor*, float, bool);
 	void (*ClearObstructions)(const char*);
+	bool (*SetCameraSubject)(FUCK::ICameraClient*, RE::Actor*, RE::Actor*);
 };
 #pragma pack(pop)
 

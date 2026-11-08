@@ -71,7 +71,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 18
+		// Next bit: 19
 		kNone             = 0,
 
 		// The session and the game
@@ -100,7 +100,8 @@ namespace FUCK
 		kFrameUpperBody   = 1 << 16, // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
 
 		// API v8+
-		kHideObstructions = 1 << 17  // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
+		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
+		kInstantMoves     = 1 << 18  // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -300,6 +301,18 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->IsCameraModified(client) : false;
+	}
+
+	/// @brief Changes who the session frames, orbits and turns, and who's framed beside them, e.g. to cut between two speakers. The last
+	/// subject is turned back to how they faced, and the camera re-frames, at once with kInstantMoves.
+	/// @param subject nullptr for the player.
+	/// @param alsoFramed nullptr for none.
+	/// @return false if the client's session isn't active.
+	/// @note API v8+.
+	inline bool SetCameraSubject(ICameraClient* client, RE::Actor* subject, RE::Actor* alsoFramed = nullptr)
+	{
+		auto i = GetInterface();
+		return i ? i->SetCameraSubject(client, subject, alsoFramed) : false;
 	}
 
 	/// @brief Swoops the camera to frame the subject's whole body into a screen area, or back again.
