@@ -365,6 +365,7 @@ namespace FUCK
 	struct CameraSessionOptions;
 	struct CameraScreenRect;
 	struct CameraMove;
+	struct CameraMoveEx;
 	struct CameraOffsets;
 	struct CameraPose;
 	class ICameraClient;
@@ -819,6 +820,10 @@ struct FUCK_Interface
 	bool (*SetCameraSubject)(FUCK::ICameraClient*, RE::Actor*, RE::Actor*);
 	bool (*IsCameraSubject)(RE::Actor*);
 	void (*SetItemPreviewHidden)(const char*, bool, bool);
+	void (*SetAutoVanityBlockedBy)(const char*, bool);
+	void (*SetHardPauseBy)(const char*, bool);
+	void (*SetSoftPauseBy)(const char*, bool);
+	void (*MoveCameraEx)(const FUCK::CameraMoveEx*, FUCK::InputDevice, float);
 };
 #pragma pack(pop)
 
@@ -1230,20 +1235,21 @@ namespace FUCK
 		if (auto i = GetInterface())
 			i->SetGameTimeFrozen(frozen);
 	}
+	// Held while any plugin asks, so letting go only lets go of this plugin's ask (API v8+)
 	inline void SetAutoVanityBlocked(bool blocked)
 	{
 		if (auto i = GetInterface())
-			i->SetAutoVanityBlocked(blocked);
+			i->SetAutoVanityBlockedBy(g_pluginName, blocked);
 	}
 	inline void SetHardPause(bool paused)
 	{
 		if (auto i = GetInterface())
-			i->SetHardPause(paused);
+			i->SetHardPauseBy(g_pluginName, paused);
 	}
 	inline void SetSoftPause(bool paused)
 	{
 		if (auto i = GetInterface())
-			i->SetSoftPause(paused);
+			i->SetSoftPauseBy(g_pluginName, paused);
 	}
 	inline void ForceCursor(bool force)
 	{

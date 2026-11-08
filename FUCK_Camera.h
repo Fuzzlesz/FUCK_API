@@ -71,7 +71,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 20
+		// Next bit: 21
 		kNone             = 0,
 
 		// The session and the game
@@ -102,7 +102,8 @@ namespace FUCK
 		// API v8+
 		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
 		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
-		kHoldHeadStill    = 1 << 19  // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
+		kHoldHeadStill    = 1 << 19, // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
+		kNoModifier       = 1 << 20  // The keyboard's camera keys and the wheel work without Ctrl, Shift still giving the second set, e.g. for a camera mode with nothing else on those keys. They're kept from the game while held. Ctrl+1-9 presets and the middle-drag moves still use Ctrl
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -145,6 +146,21 @@ namespace FUCK
 		float panZ  = 0.0f;
 		float zoom  = 0.0f;
 		float orbit = 0.0f;
+	};
+
+	/// @brief CameraMove with every control, for MoveCamera(). Axes from -1 to 1, fov widening.
+	/// @note API v8+. size is kept so later versions can add to the end.
+	struct CameraMoveEx
+	{
+		std::uint32_t size = sizeof(CameraMoveEx);
+
+		float panX  = 0.0f;
+		float panZ  = 0.0f;
+		float zoom  = 0.0f;
+		float orbit = 0.0f;
+		float pitch = 0.0f;
+		float roll  = 0.0f;
+		float fov   = 0.0f;
 	};
 
 	/// @brief Offset bases: the camera's moves from its base (and body framing), in the base camera's own axes.
@@ -295,6 +311,14 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->MoveCamera(&move, device, speedMult);
+	}
+
+	/// @brief As above, with pitch, roll and FOV too.
+	/// @note API v8+.
+	inline void MoveCamera(const CameraMoveEx& move, InputDevice device, float speedMult = 1.0f)
+	{
+		if (auto i = GetInterface())
+			i->MoveCameraEx(&move, device, speedMult);
 	}
 
 	/// @brief Clears all offsets and body framing, and puts the FOV back as the session began (see startFov), keeping the session.
