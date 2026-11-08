@@ -1235,7 +1235,7 @@ namespace FUCK
 		if (auto i = GetInterface())
 			i->SetGameTimeFrozen(frozen);
 	}
-	// Each held while any plugin asks, so letting go only lets go of this plugin's ask (counted from API v8)
+	// Each held while any plugin asks, so letting go only lets go of this plugin's ask
 	inline void SetAutoVanityBlocked(bool blocked)
 	{
 		if (auto i = GetInterface())
@@ -3329,7 +3329,7 @@ namespace FUCK
 	/// @brief Keeps the item menus' 3D preview empty and their item cards hidden, e.g. while the item's shown on the player instead. Hiding
 	/// clears what's shown now, and once let go both come back with the next item loaded.
 	/// @param withCard false to leave the cards. Covers SkyUI's card or the game's, and moreHUD's.
-	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done, as it isn't for you.
+	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done.
 	inline void SetItemPreviewHidden(bool hidden, bool withCard = true)
 	{
 		if (auto i = GetInterface())

@@ -80,6 +80,8 @@ namespace FUCK
 		kFreezeTime       = 1 << 2,  // Soft pause, so the world holds still for the session
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
+		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
+		kHoldHeadStill    = 1 << 19, // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
 
 		// Controls
 		kPivotAtCamera    = 1 << 3,  // Orbit turns the camera in place instead of circling the subject
@@ -87,6 +89,8 @@ namespace FUCK
 		kPresetHotkeys    = 1 << 5,  // Ctrl+1-9 loads the preset bound to that number. Numbers are bound in the presets list
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
 		kNoTurning        = 1 << 12, // Right-drag and RB+X/Y don't turn the subject, e.g. for one seated or at a chest, where turning would look wrong
+		kNoModifier       = 1 << 20, // The keyboard's camera keys and the wheel work without Ctrl, Shift still giving the second set. They're kept from the game while held. Ctrl+1-9 presets and the middle-drag moves still use Ctrl
+		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
 
 		// Where the camera starts
 		kFaceCamera       = 1 << 6,  // The subject turns to face the camera as the session begins
@@ -94,17 +98,11 @@ namespace FUCK
 		kFreshBase        = 1 << 15, // Third-person base: the camera starts afresh behind the subject, or in front with kCameraToFront, rather than from where the game's camera was, so neither how the player was looking nor another mod's camera (a conversation camera) carries over. Body framing sets the distance
 		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept, without kRememberFacing
 		kRememberFacing   = 1 << 14, // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
+		kStartFromView    = 1 << 21, // The session opens on the view of the session it takes over (pausing or ending it), so a handover doesn't jump. Wins over the starting framing and kRememberCamera
 
 		// Body framing
 		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
-		kFrameUpperBody   = 1 << 16, // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
-
-		// API v8+
-		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
-		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
-		kHoldHeadStill    = 1 << 19, // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
-		kNoModifier       = 1 << 20, // The keyboard's camera keys and the wheel work without Ctrl, Shift still giving the second set, e.g. for a camera mode with nothing else on those keys. They're kept from the game while held. Ctrl+1-9 presets and the middle-drag moves still use Ctrl
-		kStartFromView    = 1 << 21  // The session opens on the view of the session it takes over (pausing or ending it), so a handover doesn't jump. Wins over the starting framing and kRememberCamera. On the offset bases it's offsets from the new base, measured as it first updates
+		kFrameUpperBody   = 1 << 16  // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -150,10 +148,9 @@ namespace FUCK
 	};
 
 	/// @brief CameraMove with every control, for MoveCamera(). Axes from -1 to 1, fov widening.
-	/// @note API v8+. size is kept so later versions can add to the end.
 	struct CameraMoveEx
 	{
-		std::uint32_t size = sizeof(CameraMoveEx);
+		std::uint32_t size = sizeof(CameraMoveEx);  // Lets later versions add controls, leave as is
 
 		float panX  = 0.0f;
 		float panZ  = 0.0f;
@@ -193,7 +190,6 @@ namespace FUCK
 		virtual void OnCameraTakenOver() {}
 
 		/// @brief The position about to be rendered, after FUCK's own moves. Change it to move the camera there instead.
-		/// Offset bases from API v8, kFree before.
 		/// @note Called whenever the game asks for the camera's position, which can be more than once a frame.
 		virtual void OnCameraFinalPosition(RE::NiPoint3&) {}
 
@@ -282,7 +278,6 @@ namespace FUCK
 	}
 
 	/// @brief Whether the running session shows this actor, as its subject or framed beside them, e.g. to leave them be meanwhile.
-	/// @note API v8+.
 	inline bool IsCameraSubject(RE::Actor* actor)
 	{
 		auto i = GetInterface();
@@ -316,7 +311,6 @@ namespace FUCK
 	}
 
 	/// @brief As above, with pitch, roll and FOV too.
-	/// @note API v8+.
 	inline void MoveCamera(const CameraMoveEx& move, InputDevice device, float speedMult = 1.0f)
 	{
 		if (auto i = GetInterface())
@@ -343,7 +337,6 @@ namespace FUCK
 	/// @param subject nullptr for the player.
 	/// @param alsoFramed nullptr for none.
 	/// @return false if the client's session isn't active.
-	/// @note API v8+.
 	inline bool SetCameraSubject(ICameraClient* client, RE::Actor* subject, RE::Actor* alsoFramed = nullptr)
 	{
 		auto i = GetInterface();
@@ -382,7 +375,7 @@ namespace FUCK
 	}
 
 	/// @brief Where the camera is now, including any moves still easing in, or a pose set and still to land.
-	/// @note Offset bases from API v8, as a pose in the base camera's space, kFree before.
+	/// @note Offset bases give it in the base camera's space.
 	inline bool GetCameraPose(ICameraClient* client, CameraPose& pose)
 	{
 		auto i = GetInterface();
@@ -390,8 +383,8 @@ namespace FUCK
 	}
 
 	/// @brief Puts the camera there at once, clearing offsets and body framing.
-	/// @note A pose with fov 0 keeps the current FOV. Offset bases from API v8: it lands at the next update, as offsets from the base
-	/// then, so a base that moves (RaceMenu's camera) carries it along after.
+	/// @note A pose with fov 0 keeps the current FOV. Offset bases land on it at the next update, as offsets from the base then, so a
+	/// base that moves (RaceMenu's camera) carries it along after.
 	inline bool SetCameraPose(ICameraClient* client, const CameraPose& pose)
 	{
 		auto i = GetInterface();
@@ -484,7 +477,7 @@ namespace FUCK
 	}
 
 	// --------------------------------------------------
-	// Obstructions and sight (API v8+)
+	// Obstructions and sight
 	// --------------------------------------------------
 
 	/// @brief Hides what stands between the game's camera and an actor, for a plugin placing the camera without a session (a session sets
