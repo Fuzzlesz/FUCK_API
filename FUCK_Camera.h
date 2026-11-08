@@ -71,7 +71,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 17
+		// Next bit: 18
 		kNone             = 0,
 
 		// The session and the game
@@ -97,7 +97,10 @@ namespace FUCK
 
 		// Body framing
 		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
-		kFrameUpperBody   = 1 << 16  // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
+		kFrameUpperBody   = 1 << 16, // Offset bases: body framing takes in the upper body, from the waist to the top of the head, rather than head to toe
+
+		// API v8+
+		kHideObstructions = 1 << 17  // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -428,6 +431,35 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->DrawCameraHelpMarker(static_cast<int>(flags), extraKBM, extraGP);
+	}
+
+	// --------------------------------------------------
+	// Obstructions and sight (API v8+)
+	// --------------------------------------------------
+
+	/// @brief Hides what stands between the game's camera and an actor, for a plugin placing the camera without a session (a session sets
+	/// kHideObstructions instead). Call each frame once the camera's placed, then ClearObstructions() when done.
+	/// @note One plugin or session hides at a time, and another starting brings back what the first hid.
+	inline void UpdateObstructions(RE::Actor* subject, float interval, RE::Actor* alsoFramed = nullptr, bool upperBody = false)
+	{
+		if (auto i = GetInterface())
+			i->UpdateObstructions(g_pluginName, subject, alsoFramed, interval, upperBody);
+	}
+
+	/// @brief Brings back everything this plugin hid with UpdateObstructions().
+	inline void ClearObstructions()
+	{
+		if (auto i = GetInterface())
+			i->ClearObstructions(g_pluginName);
+	}
+
+	/// @brief Whether nothing with collision that blocks sight lies between two points, besides the references given, e.g. to choose a
+	/// camera angle that isn't up against a wall or a counter.
+	/// @param around Any reference in the world to look in, usually the subject.
+	inline bool IsLineClear(RE::TESObjectREFR* around, const RE::NiPoint3& from, const RE::NiPoint3& to, std::initializer_list<const RE::TESObjectREFR*> ignore = {})
+	{
+		auto i = GetInterface();
+		return i ? i->IsLineClear(around, &from, &to, ignore.begin(), static_cast<std::uint32_t>(ignore.size())) : true;
 	}
 
 	/// @brief Whether an actor is lying down, e.g. in a bed: their head less than 20 units above their pelvis. Body framing then measures them

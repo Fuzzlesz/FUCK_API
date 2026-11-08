@@ -1,7 +1,7 @@
 #pragma once
 #include <imgui.h>
 
-#define FUCK_API_VERSION 7
+#define FUCK_API_VERSION 8
 
 // Optional extras:
 //   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
@@ -811,6 +811,11 @@ struct FUCK_Interface
 	void* (*RequestImage)(const FUCK::ImageRequest*);
 	int (*GetImageState)(void*);
 	int (*GetInputCaptureState)();
+
+	// Version 8
+	bool (*IsLineClear)(RE::TESObjectREFR*, const RE::NiPoint3*, const RE::NiPoint3*, const RE::TESObjectREFR* const*, std::uint32_t);
+	void (*UpdateObstructions)(const char*, RE::Actor*, RE::Actor*, float, bool);
+	void (*ClearObstructions)(const char*);
 };
 #pragma pack(pop)
 
