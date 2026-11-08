@@ -1235,7 +1235,7 @@ namespace FUCK
 		if (auto i = GetInterface())
 			i->SetGameTimeFrozen(frozen);
 	}
-	// Held while any plugin asks, so letting go only lets go of this plugin's ask (API v8+)
+	// Each held while any plugin asks, so letting go only lets go of this plugin's ask (counted from API v8)
 	inline void SetAutoVanityBlocked(bool blocked)
 	{
 		if (auto i = GetInterface())
@@ -3297,16 +3297,6 @@ namespace FUCK
 		return i ? i->IsActorFrozen(actor) : false;
 	}
 
-	/// @brief Keeps the item menus' 3D preview empty and their item cards hidden, e.g. while the item's shown on the player instead. Hiding
-	/// clears what's shown now, and once let go both come back with the next item loaded.
-	/// @param withCard false to leave the cards. Covers SkyUI's card or the game's, and moreHUD's.
-	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done, as it isn't for you. API v8+.
-	inline void SetItemPreviewHidden(bool hidden, bool withCard = true)
-	{
-		if (auto i = GetInterface())
-			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden, hidden && withCard);
-	}
-
 	/// @brief Loads an image at a scale, in the background or at once, optionally keeping a cached copy, e.g. a gallery's thumbnails.
 	/// Hold it in FUCK::Image (see Image::Request), which releases it. Releasing one still waiting cancels its load.
 	/// @return The handle, drawn by FUCK's image functions once ready and skipped until then. nullptr if the path is missing, or a load done at once failed.
@@ -3330,6 +3320,20 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? static_cast<InputCaptureState>(i->GetInputCaptureState()) : InputCaptureState::kNone;
+	}
+
+	// --------------------------------------------------
+	// Version 8
+	// --------------------------------------------------
+
+	/// @brief Keeps the item menus' 3D preview empty and their item cards hidden, e.g. while the item's shown on the player instead. Hiding
+	/// clears what's shown now, and once let go both come back with the next item loaded.
+	/// @param withCard false to leave the cards. Covers SkyUI's card or the game's, and moreHUD's.
+	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done, as it isn't for you.
+	inline void SetItemPreviewHidden(bool hidden, bool withCard = true)
+	{
+		if (auto i = GetInterface())
+			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden, hidden && withCard);
 	}
 }
 
