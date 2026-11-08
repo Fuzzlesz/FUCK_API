@@ -827,6 +827,7 @@ struct FUCK_Interface
 	void (*SavePluginSettings)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata, void (*callback)(FUCK_SIMPLEINI_TYPE&, void*));
 	void (*AddSettingsListener)(void* userdata, void (*callback)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata));
 	void (*RemoveSettingsListener)(void* userdata);
+	void (*SetActorFrozenEx)(const char*, RE::Actor*, bool, bool);
 };
 #pragma pack(pop)
 
@@ -3287,11 +3288,13 @@ namespace FUCK
 	}
 
 	/// @brief Holds an actor still: no animation, AI or pushing, with the eyes kept open and looking ahead. Works whether or not the game is paused.
+	/// @param holdPhysics Pauses kRunPhysics' FSMP and CBPC while it's held, so the frozen actor's hair and cloth hold still too. They can't
+	/// be held for one actor alone, so false keeps everyone's running.
 	/// @note The actor stays frozen while any plugin holds it, so releasing only lets go of this plugin's hold. Every hold is let go before a save loads.
-	inline void SetActorFrozen(RE::Actor* actor, bool frozen)
+	inline void SetActorFrozen(RE::Actor* actor, bool frozen, bool holdPhysics = true)
 	{
 		if (auto i = GetInterface())
-			i->SetActorFrozen(FUCK::g_pluginName, actor, frozen);
+			i->SetActorFrozenEx(FUCK::g_pluginName, actor, frozen, holdPhysics);
 	}
 
 	/// @brief Whether any plugin is holding the actor frozen.
