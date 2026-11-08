@@ -818,7 +818,7 @@ struct FUCK_Interface
 	void (*ClearObstructions)(const char*);
 	bool (*SetCameraSubject)(FUCK::ICameraClient*, RE::Actor*, RE::Actor*);
 	bool (*IsCameraSubject)(RE::Actor*);
-	void (*SetItemPreviewHidden)(const char*, bool);
+	void (*SetItemPreviewHidden)(const char*, bool, bool);
 };
 #pragma pack(pop)
 
@@ -3291,13 +3291,14 @@ namespace FUCK
 		return i ? i->IsActorFrozen(actor) : false;
 	}
 
-	/// @brief Keeps the item menus' 3D preview empty, e.g. while the item's shown on the player instead. Hiding unloads the item shown now,
-	/// and once let go the next item selected shows.
+	/// @brief Keeps the item menus' 3D preview empty and their item cards hidden, e.g. while the item's shown on the player instead. Hiding
+	/// clears what's shown now, and once let go both come back with the next item loaded.
+	/// @param withCard false to leave the cards. Covers SkyUI's card or the game's, and moreHUD's.
 	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done, as it isn't for you. API v8+.
-	inline void SetItemPreviewHidden(bool hidden)
+	inline void SetItemPreviewHidden(bool hidden, bool withCard = true)
 	{
 		if (auto i = GetInterface())
-			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden);
+			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden, hidden && withCard);
 	}
 
 	/// @brief Loads an image at a scale, in the background or at once, optionally keeping a cached copy, e.g. a gallery's thumbnails.
