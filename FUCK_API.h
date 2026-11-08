@@ -817,6 +817,8 @@ struct FUCK_Interface
 	void (*UpdateObstructions)(const char*, RE::Actor*, RE::Actor*, float, bool);
 	void (*ClearObstructions)(const char*);
 	bool (*SetCameraSubject)(FUCK::ICameraClient*, RE::Actor*, RE::Actor*);
+	bool (*IsCameraSubject)(RE::Actor*);
+	void (*SetItemPreviewHidden)(const char*, bool);
 };
 #pragma pack(pop)
 
@@ -3287,6 +3289,15 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->IsActorFrozen(actor) : false;
+	}
+
+	/// @brief Keeps the item menus' 3D preview empty, e.g. while the item's shown on the player instead. Hiding unloads the item shown now,
+	/// and once let go the next item selected shows.
+	/// @note Hidden while any plugin asks, so letting go only lets go of this plugin's ask. Let go once done, as it isn't for you. API v8+.
+	inline void SetItemPreviewHidden(bool hidden)
+	{
+		if (auto i = GetInterface())
+			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden);
 	}
 
 	/// @brief Loads an image at a scale, in the background or at once, optionally keeping a cached copy, e.g. a gallery's thumbnails.

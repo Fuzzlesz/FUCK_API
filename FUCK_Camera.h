@@ -71,7 +71,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 19
+		// Next bit: 20
 		kNone             = 0,
 
 		// The session and the game
@@ -101,7 +101,8 @@ namespace FUCK
 
 		// API v8+
 		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
-		kInstantMoves     = 1 << 18  // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
+		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
+		kHoldHeadStill    = 1 << 19  // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
 	};
 
 	inline CameraSessionFlags  operator|(CameraSessionFlags a, CameraSessionFlags b) { return static_cast<CameraSessionFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -260,6 +261,14 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->IsCameraSessionPaused(client) : false;
+	}
+
+	/// @brief Whether the running session shows this actor, as its subject or framed beside them, e.g. to leave them be meanwhile.
+	/// @note API v8+.
+	inline bool IsCameraSubject(RE::Actor* actor)
+	{
+		auto i = GetInterface();
+		return i ? i->IsCameraSubject(actor) : false;
 	}
 
 	/// @brief Puts the camera back where the game left it. Call before the game moves its camera.
