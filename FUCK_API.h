@@ -828,7 +828,7 @@ struct FUCK_Interface
 	void (*AddSettingsListener)(void* userdata, void (*callback)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata));
 	void (*RemoveSettingsListener)(void* userdata);
 	void (*SetActorFrozenEx)(const char*, RE::Actor*, bool, bool);
-	bool (*FaceCameraSubject)(FUCK::ICameraClient*);
+	bool (*FaceCameraSubject)(FUCK::ICameraClient*, bool);
 };
 #pragma pack(pop)
 

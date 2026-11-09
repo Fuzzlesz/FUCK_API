@@ -343,13 +343,15 @@ namespace FUCK
 		return i ? i->SetCameraSubject(client, subject, alsoFramed) : false;
 	}
 
-	/// @brief Turns the subject to face the camera where it is now, easing with Cinematic as the user's turns do, or at once with
-	/// kInstantMoves. As kFaceCamera does as a session begins, e.g. once a subject who was moving comes to a stop.
+	/// @brief Turns the subject to face the camera where it is now, as kFaceCamera does as a session begins, e.g. once a subject who was
+	/// moving comes to a stop.
+	/// @param afresh Third-person base: the view is also set afresh in front of them, level as kFreshBase sets it, and framed again, e.g.
+	/// after a view left looking down from behind.
 	/// @return false if the client's session isn't active.
-	inline bool FaceCameraSubject(ICameraClient* client)
+	inline bool FaceCameraSubject(ICameraClient* client, bool afresh = false)
 	{
 		auto i = GetInterface();
-		return i ? i->FaceCameraSubject(client) : false;
+		return i ? i->FaceCameraSubject(client, afresh) : false;
 	}
 
 	/// @brief Swoops the camera to frame the subject's whole body into a screen area, or back again.
