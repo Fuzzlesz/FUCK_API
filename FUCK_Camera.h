@@ -80,7 +80,7 @@ namespace FUCK
 		kFreezeTime       = 1 << 2,  // Soft pause, so the world holds still for the session
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
 		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
-		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them and anyone they hold stay
+		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them, and anyone they hold stay
 		kHoldHeadStill    = 1 << 19, // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
 
 		// Controls
@@ -90,7 +90,7 @@ namespace FUCK
 		kNoKeyboard       = 1 << 9,  // No Ctrl+WASD/QE/RF, for menus that use those keys themselves. The mouse and gamepad controls stay
 		kNoTurning        = 1 << 12, // Right-drag and RB+X/Y don't turn the subject, e.g. for one seated or at a chest, where turning would look wrong
 		kNoModifier       = 1 << 20, // The keyboard's camera keys and the wheel work without Ctrl, Shift still giving the second set. They're kept from the game while held. Ctrl+1-9 presets and the middle-drag moves still use Ctrl
-		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming() and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
+		kInstantMoves     = 1 << 18, // What the client asks for lands at once rather than easing: SetCameraOffsets(), LoadCameraPreset(), SetCameraBodyFraming(), and SetCameraSubject(), for a client easing or cutting the camera itself. The shared controls still ease with Cinematic, and kFollowPose still eases
 
 		// Where the camera starts
 		kFaceCamera       = 1 << 6,  // The subject turns to face the camera as the session begins
@@ -310,7 +310,7 @@ namespace FUCK
 			i->MoveCamera(&move, device, speedMult);
 	}
 
-	/// @brief As above, with pitch, roll and FOV too.
+	/// @brief As above, with pitch, roll, and FOV too.
 	inline void MoveCamera(const CameraMoveEx& move, InputDevice device, float speedMult = 1.0f)
 	{
 		if (auto i = GetInterface())
