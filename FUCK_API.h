@@ -39,7 +39,12 @@ namespace FUCK
 	enum class Font
 	{
 		kRegular,
-		kLarge
+		kLarge,
+
+		// The game font's faces, as its menus use them. Each is the regular font when the typeface has no separate face
+		kLight,   // Used for labels
+		kMedium,  // The regular font, for text, headers, and buttons
+		kBold
 	};
 
 	enum class Overlay
