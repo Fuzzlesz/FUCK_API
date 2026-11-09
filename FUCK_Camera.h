@@ -343,6 +343,15 @@ namespace FUCK
 		return i ? i->SetCameraSubject(client, subject, alsoFramed) : false;
 	}
 
+	/// @brief Turns the subject to face the camera where it is now, easing with Cinematic as the user's turns do, or at once with
+	/// kInstantMoves. As kFaceCamera does as a session begins, e.g. once a subject who was moving comes to a stop.
+	/// @return false if the client's session isn't active.
+	inline bool FaceCameraSubject(ICameraClient* client)
+	{
+		auto i = GetInterface();
+		return i ? i->FaceCameraSubject(client) : false;
+	}
+
 	/// @brief Swoops the camera to frame the subject's whole body into a screen area, or back again.
 	/// Already framed, a different area or margin re-frames in place without the swoop, keeping the camera's offsets.
 	/// @param rect The part of the screen to frame the body in, e.g. above a menu's bottom bar.
