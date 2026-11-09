@@ -98,7 +98,7 @@ namespace FUCK
 		kFreshBase        = 1 << 15, // Third-person base: the camera starts afresh behind the subject, or in front with kCameraToFront, rather than from where the game's camera was, so neither how the player was looking nor another mod's camera (a conversation camera) carries over. Body framing sets the distance
 		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept, without kRememberFacing
 		kRememberFacing   = 1 << 14, // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
-		kStartFromView    = 1 << 21, // The session opens on the view of the session it takes over (pausing or ending it), so a handover doesn't jump. Wins over the starting framing and kRememberCamera
+		kStartFromView    = 1 << 21, // The session opens on the view last shown, another session's or the game's own (a conversation camera's), so a handover doesn't jump, even if the client moved the camera to set up. It then eases into its starting FOV, and its framing with startFramed, which are what ResetCamera() goes back to. Wins over kRememberCamera
 
 		// Body framing
 		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
