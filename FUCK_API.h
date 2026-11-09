@@ -6,6 +6,8 @@
 // Optional extras:
 //   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
 //   FUCK_Camera.h       - Camera sessions, shared camera controls and applets (v7+)
+//   IconsFontAwesome6.h - Font Awesome icon macros, drawn by every font but Font::kGameIcons
+//   IconsGameIcons.h    - game-icons.net icon macros, drawn by Font::kGameIcons (v8+)
 
 // ==================================================
 // [ OPTIONAL ] SIMPLEINI HELPERS
@@ -44,7 +46,11 @@ namespace FUCK
 		// The game font's faces, as its menus use them. Each is the regular font when the typeface has no separate face
 		kLight,   // Used for labels
 		kMedium,  // The regular font, for text, headers, and buttons
-		kBold
+		kBold,
+
+		// The regular font with game-icons.net's icons (IconsGameIcons.h) in place of Font Awesome's, as the two sets share codes. Both sets can be used in the same text
+		// by pushing this font around the game icons
+		kGameIcons
 	};
 
 	enum class Overlay
