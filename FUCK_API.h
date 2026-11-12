@@ -3355,6 +3355,14 @@ namespace FUCK
 			i->SetItemPreviewHidden(FUCK::g_pluginName, hidden, hidden && withCard);
 	}
 
+	/// @brief SetItemPreviewHidden() with the 3D preview and the item cards asked for apart, e.g. to hide only the cards.
+	/// @note The same ask as SetItemPreviewHidden(), so a plugin using both sets the two together each time.
+	inline void SetItemDisplayHidden(bool preview, bool card)
+	{
+		if (auto i = GetInterface())
+			i->SetItemPreviewHidden(FUCK::g_pluginName, preview, card);
+	}
+
 	/// @brief Called after any plugin's settings or keybinds are saved through PluginSettings, by their own plugin or another, e.g. so yours
 	/// reload when another plugin's panel changed them. Your own saves come through too, so check savedBy.
 	/// @param callback pluginName is whose file was saved and savedBy who saved it, nullptr if unknown. keybinds
