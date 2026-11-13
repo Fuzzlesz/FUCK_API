@@ -21,7 +21,8 @@
 // One plugin owns the camera at a time, through a session over one of three bases:
 //   kOffset       A camera the game holds still, e.g. RaceMenu's. FUCK's moves are offsets on it.
 //   kThirdPerson  The player's third-person camera, e.g. in the inventory. Fixed where it is when the session
-//                 begins, and kept there while time runs (Skyrim Souls). SmoothCam is paused for the session.
+//                 begins, and kept there while time runs (Skyrim Souls). SmoothCam is paused for the session, and
+//                 handed back where it would have the camera, rather than easing there from the session's view.
 //   kFree         The game's free camera, entered for the session and left after.
 //
 // kOffset and kThirdPerson (the offset bases) are driven by the client each frame, from wherever the
@@ -132,7 +133,7 @@ namespace FUCK
 	struct CameraControlState
 	{
 		bool inputAllowed   = true;   // false drops queued input and waits for buttons to be released
-		bool mouseLocked    = false;  // true when a mouse press began over your own UI, so the camera leaves that press alone
+		bool mouseLocked    = false;  // true while the mouse is over your own UI, and through a press begun there, so the camera leaves the mouse alone. Set it on hover, not on the press, as FUCK decides whether a press is the camera's as it lands, before your next update
 		bool gamepadBlocked = false;  // true while you use the gamepad for your own controls, so the camera ignores it
 		bool uiShown        = true;   // false while the client's UI is hidden, so FUCK ignores ImGui hovering and the camera keeps the mouse
 		bool cameraMoves    = true;   // false turns off the controls that move the camera, on every device. Turning the subject still works. E.g. for a client offering sliders instead
@@ -220,7 +221,8 @@ namespace FUCK
 		// Framed alongside the subject, so both fit the framing area side by side. Never orbited or turned. nullptr for none
 		RE::Actor* alsoFramed = nullptr;
 
-		// Offset bases: the FOV the session opens at, in degrees, which ResetCamera() goes back to. A remembered FOV wins over it. 0 for the game's
+		// Offset bases: the FOV the session opens at, in degrees, which ResetCamera() goes back to. A remembered FOV wins over it. 0 for the game's.
+		// With startFramed, it's applied together with the framing, once the body can be measured, so it never narrows the view before the camera's framed
 		float startFov = 0.0f;
 	};
 
