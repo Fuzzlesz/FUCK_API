@@ -843,6 +843,7 @@ struct FUCK_Interface
 
 	// Version 9
 	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
+	void (*SetCameraUpperBody)(FUCK::ICameraClient*, bool);
 };
 #pragma pack(pop)
 

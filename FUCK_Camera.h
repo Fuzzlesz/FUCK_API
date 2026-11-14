@@ -384,6 +384,13 @@ namespace FUCK
 			i->SetCameraPartFraming(client, node, size);
 	}
 
+	/// @brief Turns kFrameUpperBody on or off for the running session, framing again in place, e.g. as a setting changes while it's shown.
+	inline void SetCameraUpperBody(ICameraClient* client, bool upperBody)
+	{
+		if (auto i = GetInterface())
+			i->SetCameraUpperBody(client, upperBody);
+	}
+
 	/// @brief Offset bases: where the camera is heading, which is where it settles once any easing ends.
 	inline bool GetCameraOffsets(ICameraClient* client, CameraOffsets& offsets)
 	{
