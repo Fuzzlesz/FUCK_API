@@ -373,6 +373,17 @@ namespace FUCK
 		return i ? i->IsCameraBodyFramed(client) : false;
 	}
 
+	/// @brief Aims body framing at one part of the subject rather than the whole body, e.g. the head or a held item, and orbits round it.
+	/// Applies while the body is framed, easing over as framing does, and the player's zoom carries on from it.
+	/// @param node A node on the subject, e.g. "NPC Head [Head]". nullptr or empty goes back to the whole body.
+	/// @param size The part's height to frame, in game units. 0 measures what hangs off the node instead, so a dagger is framed close and
+	/// a greatsword wide. A node that isn't there, or has nothing to measure, keeps the whole body.
+	inline void SetCameraPartFraming(ICameraClient* client, const char* node, float size = 0.0f)
+	{
+		if (auto i = GetInterface())
+			i->SetCameraPartFraming(client, node, size);
+	}
+
 	/// @brief Offset bases: where the camera is heading, which is where it settles once any easing ends.
 	inline bool GetCameraOffsets(ICameraClient* client, CameraOffsets& offsets)
 	{

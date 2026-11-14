@@ -1,7 +1,7 @@
 #pragma once
 #include <imgui.h>
 
-#define FUCK_API_VERSION 8
+#define FUCK_API_VERSION 9
 
 // Optional extras:
 //   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
@@ -840,6 +840,9 @@ struct FUCK_Interface
 	void (*RemoveSettingsListener)(void* userdata);
 	void (*SetActorFrozenEx)(const char*, RE::Actor*, bool, bool);
 	bool (*FaceCameraSubject)(FUCK::ICameraClient*, bool);
+
+	// Version 9
+	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
 };
 #pragma pack(pop)
 
