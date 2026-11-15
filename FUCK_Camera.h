@@ -237,7 +237,7 @@ namespace FUCK
 	enum class CameraSettingsFlags : int
 	{
 		kNone            = 0,
-		kSpeeds          = 1 << 0,  // Per-device speed tabs, for an advanced view
+		kSpeeds          = 1 << 0,  // Per-device speed tabs, under a Camera Feel header
 		kSelectDeviceTab = 1 << 1   // Open on the tab for the device in use. Pass it on the frame your panel opens
 	};
 
@@ -498,7 +498,8 @@ namespace FUCK
 		return i ? i->DrawCameraPresets(client, width) : false;
 	}
 
-	/// @brief The camera's settings, saved by FUCK as they change.
+	/// @brief The camera's settings, saved by FUCK as they change: cinematic movement, inverted tilt and turning, then the speeds
+	/// under their own header with kSpeeds.
 	/// @return true if anything changed.
 	inline bool DrawCameraSettings(CameraSettingsFlags flags = CameraSettingsFlags::kNone)
 	{
