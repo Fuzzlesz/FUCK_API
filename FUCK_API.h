@@ -2855,6 +2855,7 @@ namespace FUCK
 			i->OpenPopup(str_id, static_cast<int>(flags));
 	}
 
+	/// @brief Its corners follow the theme. It fits its contents, unless SetNextWindowSize() gave it a size, which it keeps and scrolls within.
 	/// @param flags Currently ignored. Reserved for future updates.
 	inline bool BeginPopup(const char* str_id, WindowFlags flags = WindowFlags::kNone)
 	{
