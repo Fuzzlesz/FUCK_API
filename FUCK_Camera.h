@@ -80,7 +80,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 22
+		// Next bit: 23
 		kNone             = 0,
 
 		// The session and the game
@@ -108,6 +108,7 @@ namespace FUCK
 		kRememberCamera   = 1 << 7,  // Offset bases: the camera is saved for the context as the session ends, and the next session in that context opens on it. The subject's facing isn't kept, without kRememberFacing
 		kRememberFacing   = 1 << 14, // With kRememberCamera: how the subject was turned is kept too, relative to the camera, and they're turned back to it. It wins over kFaceCamera
 		kStartFromView    = 1 << 21, // The session opens on the view last shown, another session's or the game's own (a conversation camera's), so a handover doesn't jump, even if the client moved the camera to set up. It then eases into its starting FOV, and its framing with startFramed, which are what ResetCamera() goes back to. Wins over kRememberCamera. A client beginning again over the view it showed (showing someone else) cuts instead
+		kContinueView     = 1 << 22, // Offset bases, over a kResumable session on the same subject and base: carries on its camera exactly, its framing, part and FOV, and how it holds it, its kFrameUpperBody, kFollowPose, kNoTurning, kHoldHeadStill and kHideObstructions in place of this session's, with the subject left facing as they are and what it hid kept hidden, so the handover can't be seen. Handed back the same way as it ends, to that session's own camera. Wins over kStartFromView, kRememberCamera, startFramed and kFaceCamera. Otherwise the session begins as without it
 
 		// Body framing
 		kFollowPose       = 1 << 11, // Offset bases: a framed body whose height changes (standing up from a kneel, sitting) is framed again, easing over
