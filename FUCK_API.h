@@ -844,6 +844,8 @@ struct FUCK_Interface
 	// Version 9
 	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
 	void (*SetCameraUpperBody)(FUCK::ICameraClient*, bool);
+	void (*AddCameraListener)(void* userdata, void (*callback)(int event, const char* context, void* userdata));
+	void (*RemoveCameraListener)(void* userdata);
 };
 #pragma pack(pop)
 

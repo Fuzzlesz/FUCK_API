@@ -62,6 +62,14 @@
 
 namespace FUCK
 {
+	/// @brief What a camera event reports, see CameraEventListener.
+	enum class CameraEvent : int
+	{
+		kBegan,          // a session took the camera
+		kEnded,          // a session gave it up. A client starting over ends then begins in one go, so react to what begins instead
+		kSubjectChanged  // the running session shows someone else, see SetCameraSubject()
+	};
+
 	enum class CameraBase
 	{
 		kOffset,      // A camera the game holds still, e.g. a menu's, with FUCK's moves as offsets on it
@@ -545,4 +553,37 @@ namespace FUCK
 		const auto      pelvis = actor ? actor->GetNodeByName("NPC Pelvis [Pelv]") : nullptr;
 		return head && pelvis && head->world.translate.z - pelvis->world.translate.z < LYING_HEIGHT;
 	}
+
+	/// @brief RAII wrapper for hearing when a camera session begins, ends or changes its subject, from any plugin. Called at once, from
+	/// inside the call that caused it, so a scene that follows the camera can change before the frame is drawn.
+	/// @note context is the session's, see CameraSessionOptions::context.
+	class CameraEventListener
+	{
+	public:
+		using Callback = std::function<void(CameraEvent event, const char* context)>;
+
+		CameraEventListener() = default;
+		explicit CameraEventListener(Callback a_cb) :
+			_callback(std::move(a_cb))
+		{
+			if (auto i = GetInterface())
+				i->AddCameraListener(this, &CameraEventListener::Dispatch);
+		}
+		~CameraEventListener()
+		{
+			if (_callback)
+				if (auto i = GetInterface())
+					i->RemoveCameraListener(this);
+		}
+
+		CameraEventListener(const CameraEventListener&)            = delete;
+		CameraEventListener& operator=(const CameraEventListener&) = delete;
+
+	private:
+		static void Dispatch(int event, const char* context, void* userdata)
+		{
+			static_cast<CameraEventListener*>(userdata)->_callback(static_cast<CameraEvent>(event), context);
+		}
+		Callback _callback;
+	};
 }
