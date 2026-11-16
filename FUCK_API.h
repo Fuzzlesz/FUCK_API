@@ -371,6 +371,19 @@ namespace FUCK
 		kFailed    // the file couldn't be loaded
 	};
 
+	/// @brief The theme's own colours that have no ImGuiCol, for GetThemeColor().
+	enum class ThemeColor
+	{
+		kTextHovered,
+		kHeaderText,
+		kNavHighlight,
+		kSeparator,
+		kTabBorder,
+		kTabBorderActive,
+		kWidgetBorder,
+		kWidgetBorderActive
+	};
+
 	// --- Optional Header Types ---
 	// Defined in FUCK_Camera.h
 	struct CameraSessionOptions;
@@ -866,6 +879,14 @@ struct FUCK_Interface
 
 	void (*AddCameraListener)(void* userdata, void (*callback)(int event, const char* context, void* userdata));
 	void (*RemoveCameraListener)(void* userdata);
+
+	void (*AddThemedImage)(void*, const ImVec2&, const ImVec2&, const ImVec2&, const ImVec2&, const ImVec4&, float, int);
+	void (*DrawThemedRectFilled)(const ImVec2&, const ImVec2&, const ImVec4&, float, int);
+	void (*DrawThemedRect)(const ImVec2&, const ImVec2&, const ImVec4&, float, float);
+	void (*GetThemeColor)(int, float*, float*, float*, float*);
+
+	bool (*ButtonEx)(const char*, bool, float);
+	bool (*BeginTabBarWithTrailing)(const char*, float, int);
 
 	void (*SetGamepadNavBlockedBy)(const char*, bool);
 };
@@ -3410,6 +3431,59 @@ namespace FUCK
 	// --------------------------------------------------
 	// Version 9
 	// --------------------------------------------------
+
+	/// @brief AddImage clipped to the theme's corner shape, rounded or cut away, so a picture can fill a frame edge to edge.
+	/// @param rounding The corner radius, in pixels. Pass GetStyleVar(ImGuiStyleVar_FrameRounding) to match the theme.
+	/// @param corners ImDrawFlags_RoundCorners* bits, for shaping only some corners.
+	inline void AddThemedImage(ImTextureID textureId, const ImVec2& min, const ImVec2& max, float rounding, int corners = ImDrawFlags_RoundCornersAll, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& col = ImVec4(1, 1, 1, 1))
+	{
+		if (auto i = GetInterface())
+			i->AddThemedImage((void*)textureId, min, max, uv0, uv1, col, rounding, corners);
+	}
+
+	/// @brief DrawRectFilled in the theme's corner shape, rounded or cut away, as FUCK's own frames are drawn.
+	/// @param corners ImDrawFlags_RoundCorners* bits, for shaping only some corners.
+	inline void DrawThemedRectFilled(const ImVec2& min, const ImVec2& max, const ImVec4& col, float rounding, int corners = ImDrawFlags_RoundCornersAll)
+	{
+		if (auto i = GetInterface())
+			i->DrawThemedRectFilled(min, max, col, rounding, corners);
+	}
+
+	/// @brief DrawRect in the theme's corner shape, rounded or cut away, as FUCK's own frames are drawn.
+	inline void DrawThemedRect(const ImVec2& min, const ImVec2& max, const ImVec4& col, float rounding, float thickness = 1.0f)
+	{
+		if (auto i = GetInterface())
+			i->DrawThemedRect(min, max, col, rounding, thickness);
+	}
+
+	/// @brief One of the theme's own colours, so a custom control can be marked as FUCK marks its own,
+	/// such as a selected item edged in kTabBorderActive as the lit tab is.
+	inline ImVec4 GetThemeColor(ThemeColor which)
+	{
+		ImVec4 v(1, 1, 1, 1);
+		if (auto i = GetInterface())
+			i->GetThemeColor(static_cast<int>(which), &v.x, &v.y, &v.z, &v.w);
+		return v;
+	}
+
+	/// @brief Button() with a selected state and a minimum width.
+	/// @param selected Keeps the border lit as when hovered, as ColorButton() does, e.g. for the current page in a row of page buttons.
+	/// @param minTextWidth Sized for text this wide when it's wider than the label, e.g. the widest of the labels a button flips between,
+	/// so it keeps one width and doesn't shove what's beside it. Padding is added as for the label.
+	inline bool Button(const char* label, bool selected, float minTextWidth = 0.0f)
+	{
+		auto i = GetInterface();
+		return i ? i->ButtonEx(label, selected, minTextWidth) : false;
+	}
+
+	/// @brief BeginTabBar() that leaves room at the row's right-hand end, so a button or checkbox drawn there sits beside the tabs
+	/// and they never run under it. Draw it at the content region's right edge, level with the tabs, and end the bar with EndTabBar().
+	/// @param trailingWidth The width of what's drawn there. Item spacing is left before it.
+	inline bool BeginTabBarWithTrailing(const char* str_id, float trailingWidth, int flags = 0)
+	{
+		auto i = GetInterface();
+		return i ? i->BeginTabBarWithTrailing(str_id, trailingWidth, flags) : false;
+	}
 
 	/// @brief Turns ImGui's gamepad navigation off while your window drives the pad itself, so the shoulders and face buttons can't move
 	/// focus into another plugin's window. The buttons still reach ImGui as keys, e.g. for IsKeyPressed(ImGuiKey_GamepadR1).
