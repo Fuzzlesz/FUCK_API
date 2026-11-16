@@ -780,20 +780,26 @@ struct FUCK_Interface
 	bool (*ColorButton)(const char*, const ImVec4&, int, const ImVec2&, bool);
 	bool (*ColorPicker3)(const char*, float[3], int);
 	bool (*ColorPicker4)(const char*, float[4], int, const float*);
+
 	bool (*IsItemActivated)();
 	bool (*IsHotkeyEnabled)();
+
 	float (*GetWindowScale)();
 	float (*GetWindowRotation)();
+
 	void (*BeginStickyList)(const char*, float, float, bool);
 	void (*EndStickyList)();
 	bool (*StickyHeader)(const char*, bool*, int, int);
+
 	void (*RefreshTools)();
+
 	bool (*IsGameHUDHidden)();
 	void (*EnumerateHUDWidgets)(void* userdata, void (*callback)(const char* pluginName, const char* windowId, const char* title, void* userdata));
 	void (*SetWindowAlphaOverride)(const char* pluginName, const char* windowId, float alpha);
 
 	// Version 7
 	bool (*ComboWithKeyBadges)(const char*, int*, const char* const*, int, int, const std::uint32_t*, int*);
+
 	bool (*BeginCameraSession)(const FUCK::CameraSessionOptions*);
 	void (*EndCameraSession)(FUCK::ICameraClient*);
 	bool (*IsCameraSessionActive)(FUCK::ICameraClient*);
@@ -803,47 +809,61 @@ struct FUCK_Interface
 	void (*MoveCamera)(const FUCK::CameraMove*, FUCK::InputDevice, float);
 	void (*ResetCamera)(FUCK::ICameraClient*);
 	bool (*IsCameraModified)(FUCK::ICameraClient*);
+
 	void (*SetCameraBodyFraming)(FUCK::ICameraClient*, bool, const FUCK::CameraScreenRect*, float);
 	bool (*IsCameraBodyFramed)(FUCK::ICameraClient*);
+
 	bool (*GetCameraOffsets)(FUCK::ICameraClient*, FUCK::CameraOffsets*);
 	bool (*SetCameraOffsets)(FUCK::ICameraClient*, const FUCK::CameraOffsets*);
 	bool (*GetCameraPose)(FUCK::ICameraClient*, FUCK::CameraPose*);
 	bool (*SetCameraPose)(FUCK::ICameraClient*, const FUCK::CameraPose*);
 	bool (*GetCameraFov)(float*, float*);
+
 	bool (*SaveCameraPreset)(FUCK::ICameraClient*, const char*, bool);
 	bool (*LoadCameraPreset)(FUCK::ICameraClient*, const char*);
 	bool (*DeleteCameraPreset)(FUCK::ICameraClient*, const char*);
 	int (*GetCameraPresetCount)(FUCK::ICameraClient*);
 	const char* (*GetCameraPresetName)(FUCK::ICameraClient*, int);
 	bool (*DrawCameraPresets)(FUCK::ICameraClient*, float);
+
 	bool (*DrawCameraSettings)(int);
 	void (*DrawCameraHelpMarker)(int, const char*, const char*);
+
 	void (*SetActorFrozen)(const char*, RE::Actor*, bool);
 	bool (*IsActorFrozen)(RE::Actor*);
+
 	void* (*RequestImage)(const FUCK::ImageRequest*);
 	int (*GetImageState)(void*);
+
 	int (*GetInputCaptureState)();
 
 	// Version 8
 	bool (*IsLineClear)(RE::TESObjectREFR*, const RE::NiPoint3*, const RE::NiPoint3*, const RE::TESObjectREFR* const*, std::uint32_t);
 	void (*UpdateObstructions)(const char*, RE::Actor*, RE::Actor*, float, bool);
 	void (*ClearObstructions)(const char*);
+
 	bool (*SetCameraSubject)(FUCK::ICameraClient*, RE::Actor*, RE::Actor*);
 	bool (*IsCameraSubject)(RE::Actor*);
+
 	void (*SetItemPreviewHidden)(const char*, bool, bool);
 	void (*SetAutoVanityBlockedBy)(const char*, bool);
 	void (*SetHardPauseBy)(const char*, bool);
 	void (*SetSoftPauseBy)(const char*, bool);
+
 	void (*MoveCameraEx)(const FUCK::CameraMoveEx*, FUCK::InputDevice, float);
+
 	void (*SavePluginSettings)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata, void (*callback)(FUCK_SIMPLEINI_TYPE&, void*));
 	void (*AddSettingsListener)(void* userdata, void (*callback)(const char* pluginName, const char* savedBy, bool keybinds, void* userdata));
 	void (*RemoveSettingsListener)(void* userdata);
+
 	void (*SetActorFrozenEx)(const char*, RE::Actor*, bool, bool);
+
 	bool (*FaceCameraSubject)(FUCK::ICameraClient*, bool);
 
 	// Version 9
 	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
 	void (*SetCameraUpperBody)(FUCK::ICameraClient*, bool);
+
 	void (*AddCameraListener)(void* userdata, void (*callback)(int event, const char* context, void* userdata));
 	void (*RemoveCameraListener)(void* userdata);
 };
