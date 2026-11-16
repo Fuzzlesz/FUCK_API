@@ -866,6 +866,8 @@ struct FUCK_Interface
 
 	void (*AddCameraListener)(void* userdata, void (*callback)(int event, const char* context, void* userdata));
 	void (*RemoveCameraListener)(void* userdata);
+
+	void (*SetGamepadNavBlockedBy)(const char*, bool);
 };
 #pragma pack(pop)
 
@@ -3403,6 +3405,19 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->RemoveSettingsListener(userdata);
+	}
+
+	// --------------------------------------------------
+	// Version 9
+	// --------------------------------------------------
+
+	/// @brief Turns ImGui's gamepad navigation off while your window drives the pad itself, so the shoulders and face buttons can't move
+	/// focus into another plugin's window. The buttons still reach ImGui as keys, e.g. for IsKeyPressed(ImGuiKey_GamepadR1).
+	/// @note Off while any plugin asks, so letting go only lets go of this plugin's ask. Let go when your window closes.
+	inline void SetGamepadNavBlocked(bool blocked)
+	{
+		if (auto i = GetInterface())
+			i->SetGamepadNavBlockedBy(g_pluginName, blocked);
 	}
 }
 
