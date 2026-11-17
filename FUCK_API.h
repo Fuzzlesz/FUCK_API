@@ -371,6 +371,107 @@ namespace FUCK
 		kFailed    // the file couldn't be loaded
 	};
 
+	/// @brief A picture card for Card(): a picture with its name under it, e.g. one entry in a gallery.
+	struct CardDesc
+	{
+		std::uint32_t size      = sizeof(CardDesc);   // Lets later versions add options, leave as is
+		const char*   id        = nullptr;            // Unique among its siblings, as a label's ID is
+		const char*   name      = nullptr;            // Optional. Under the picture, cut with "..." when it doesn't fit
+		ImVec4        nameColor{};                    // Optional, e.g. to mark one that doesn't fit. Zero alpha keeps the theme's
+		void*         image     = nullptr;            // A FUCK image handle. Drawn once it's ready
+		ImageState    state     = ImageState::kNone;  // While there's no picture to draw: kLoading spins and kFailed crosses
+		const char*   glyph     = nullptr;            // Optional. An icon in an empty picture, e.g. ICON_FA_IMAGE
+		float         side      = 0.0f;               // The picture's width, e.g. as CardGrid() hands it
+		float         aspect    = 1.0f;               // The picture's height over its width
+		float         alpha     = 1.0f;               // The picture's opacity, e.g. to fade it in
+		bool          selected  = false;              // Edged as the theme edges its lit tab
+		bool          showStar  = false;              // A favourite star in the picture's top-left corner
+		bool          favourite = false;
+	};
+
+	/// @brief What happened to a card drawn by Card().
+	struct CardResult
+	{
+		bool   clicked        = false;
+		bool   hovered        = false;
+		bool   favouriteAsked = false;  // The star clicked, or the pad's Y over the card
+		bool   starHovered    = false;  // e.g. for a tooltip on the star
+		bool   nameCut        = false;  // The name didn't fit, e.g. to show it whole in a tooltip
+		ImVec2 pictureMin{};            // Where the picture is, for drawing your own marks on it
+		ImVec2 pictureMax{};
+	};
+
+	/// @brief One layer of a face's tint, for ModelRenderRequest.
+	struct ModelRenderTintLayer
+	{
+		const char* mask = nullptr;  // A greyscale .dds from the game's data, under textures\ or not. Copied
+		float       colour[4]{};     // RGB laid over where the mask is white, at A's strength. 0 to 1
+	};
+
+	/// @brief Options for RenderModel().
+	struct ModelRenderRequest
+	{
+		std::uint32_t   size        = sizeof(ModelRenderRequest);  // Lets later versions add options, leave as is
+		RE::NiAVObject* model       = nullptr;  // A loaded model or part of one, e.g. an actor's face node. Held until it's drawn
+		const char*     path        = nullptr;  // The .png to write. Its folders are made. Copied
+		std::uint32_t   pixels      = 256;      // Square
+		float           yaw         = 0.0f;     // Degrees. 0 is front on, as an actor faces
+		float           pitch       = 0.0f;     // Degrees, looking down on it
+		float           margin      = 1.05f;    // Room around the model, as a scale on its size
+		bool            transparent = false;    // A clear background, else FUCK's studio backdrop
+		void*           userdata    = nullptr;
+		void (*callback)(const char* path, bool success, void* userdata) = nullptr;  // Optional. Called on a background thread once written
+
+		// The face's tint built from these, in order, in place of its own. For a face whose tint isn't its own to draw into,
+		// e.g. a copy made at runtime, which shares the game's
+		const ModelRenderTintLayer* faceTint      = nullptr;
+		std::uint32_t               faceTintCount = 0;
+	};
+
+	/// @brief One mesh for DrawMeshes(), already on the GPU as the caller made it.
+	struct MeshDraw
+	{
+		void*         vertexBuffer     = nullptr;  // An ID3D11Buffer of position xyz, UV, and normal xyz as floats, 32 bytes a vertex
+		void*         indexBuffer      = nullptr;  // An ID3D11Buffer of 32-bit indices
+		std::uint32_t indexCount       = 0;
+		void*         diffuse          = nullptr;  // An ID3D11ShaderResourceView, or none for flat grey
+		bool          useAlpha         = false;    // The diffuse's alpha cuts it
+		bool          blendAlpha       = false;    // Drawn over the solid meshes, blended
+		float         alpha            = 1.0f;
+		float         cutoff           = 0.0f;     // Alpha at or under this isn't drawn
+		float         specularStrength = 0.10f;
+		float         specularPower    = 42.0f;
+		float         emissive[3]{};
+		float         emissiveStrength = 0.0f;
+	};
+
+	/// @brief Options for DrawMeshes().
+	struct MeshDrawRequest
+	{
+		std::uint32_t   size      = sizeof(MeshDrawRequest);  // Lets later versions add options, leave as is
+		const MeshDraw* meshes    = nullptr;
+		std::uint32_t   meshCount = 0;
+		float           viewProj[16]{};                     // The view times the projection, as DirectX::XMStoreFloat4x4 stores it
+		float           eye[3]{};                           // The camera, in the meshes' space
+		float           lightDir[3]{ 0.0f, 0.0f, 1.0f };    // Towards the key light
+		std::uint32_t   pixels       = 256;                 // Square
+		float           backdropLift = 0.0f;                // Brightens the studio backdrop, e.g. behind dark hair
+		bool            transparent  = false;               // A clear background, else the studio backdrop
+		std::uint8_t*   rgba         = nullptr;             // pixels x pixels x 4 bytes, filled with the picture
+	};
+
+	/// @brief Options for CaptureFrame().
+	struct CaptureRequest
+	{
+		std::uint32_t size     = sizeof(CaptureRequest);  // Lets later versions add options, leave as is
+		ImVec2        min{};                              // The area to keep, in screen pixels as GetDisplaySize() measures. Empty keeps it all
+		ImVec2        max{};
+		const char*   path     = nullptr;                 // The .png to write. Its folders are made. Copied
+		ImVec2        outSize{};                          // Scaled to this. Zero keeps the area's size
+		void*         userdata = nullptr;
+		void (*callback)(const char* path, bool success, void* userdata) = nullptr;  // Optional. Called on a background thread once written
+	};
+
 	/// @brief The theme's own colours that have no ImGuiCol, for GetThemeColor().
 	enum class ThemeColor
 	{
@@ -889,6 +990,12 @@ struct FUCK_Interface
 	bool (*BeginTabBarWithTrailing)(const char*, float, int);
 
 	void (*SetGamepadNavBlockedBy)(const char*, bool);
+
+	bool (*Card)(const FUCK::CardDesc*, FUCK::CardResult*);
+	float (*GetCardHeight)(float, float, bool);
+	bool (*CaptureFrame)(const FUCK::CaptureRequest*);
+	bool (*RenderModel)(const FUCK::ModelRenderRequest*);
+	bool (*DrawMeshes)(const FUCK::MeshDrawRequest*);
 };
 #pragma pack(pop)
 
@@ -3493,6 +3600,95 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->SetGamepadNavBlockedBy(g_pluginName, blocked);
+	}
+
+	/// @brief A picture card: the picture, its name cut to fit, an optional favourite star, and the selected edge, drawn as one item.
+	/// @note Hover tooltips are yours, e.g. the whole name when nameCut is set.
+	inline CardResult Card(const CardDesc& desc)
+	{
+		CardResult r;
+		if (auto i = GetInterface())
+			i->Card(&desc, &r);
+		return r;
+	}
+
+	/// @brief The height of a card as Card() draws it, the picture with or without its name.
+	inline float GetCardHeight(float side, float aspect = 1.0f, bool withName = true)
+	{
+		auto i = GetInterface();
+		return i ? i->GetCardHeight(side, aspect, withName) : side * aspect;
+	}
+
+	/// @brief Lays cards out in rows that fill the width, each at least minSide wide, and skips the rows out of view.
+	/// @param drawOne Called as drawOne(index, side) for each card in view. Draw one Card() that wide.
+	/// @note Draw it in a scrolling child, as the rows out of view are only skipped within the window.
+	template <class F>
+	inline void CardGrid(std::size_t count, float minSide, float aspect, bool withNames, F&& drawOne)
+	{
+		if (count == 0 || minSide <= 0.0f)
+			return;
+
+		// Measured to the window's edge less a scrollbar's room, so the columns don't change as the scrollbar comes and goes
+		const float  avail    = GetContentRegionAvail().x;
+		const ImVec2 winPos   = GetWindowPos();
+		const ImVec2 winSize  = GetWindowSize();
+		const float  reserved = (winPos.x + winSize.x) - GetCursorScreenPos().x - GetStyleVarVec(ImGuiStyleVar_WindowPadding).x - GetStyleVar(ImGuiStyleVar_ScrollbarSize);
+		const float  width    = (reserved > 0.0f && reserved < avail) ? reserved : avail;
+
+		const float spacing = GetStyleVarVec(ImGuiStyleVar_ItemSpacing).x;
+		int         cols    = width > minSide ? static_cast<int>((width + spacing) / (minSide + spacing)) : 1;
+		cols                = cols < 1 ? 1 : cols;
+		float side          = (width - spacing * static_cast<float>(cols - 1)) / static_cast<float>(cols);
+		side                = side < minSide ? minSide : side;
+
+		const float rowH = GetCardHeight(side, aspect, withNames);
+
+		// A row's margin each side, so a slow scroll meets cards that started loading a moment before they came into view
+		const float margin = rowH + GetStyleVarVec(ImGuiStyleVar_ItemSpacing).y;
+		const float top    = winPos.y - margin;
+		const float bottom = winPos.y + winSize.y + margin;
+
+		for (std::size_t first = 0; first < count; first += static_cast<std::size_t>(cols)) {
+			const float y = GetCursorScreenPos().y;
+			if (y + rowH < top || y > bottom) {
+				Dummy(ImVec2(side, rowH));
+				continue;
+			}
+			const std::size_t inRow = (std::min)(static_cast<std::size_t>(cols), count - first);
+			for (std::size_t i = 0; i < inRow; ++i) {
+				if (i != 0)
+					SameLine();
+				drawOne(first + i, side);
+			}
+		}
+	}
+
+	/// @brief Saves part of the next frame to a .png, as the game drew it before FUCK's UI, e.g. a portrait for a gallery.
+	/// @note Game menus drawn that frame are in it, so hide yours first. Taken at the start of FUCK's next draw.
+	/// @return false if the request was refused, e.g. no path.
+	inline bool CaptureFrame(const CaptureRequest& request)
+	{
+		auto i = GetInterface();
+		return i ? i->CaptureFrame(&request) : false;
+	}
+
+	/// @brief Draws a loaded model off screen with its own textures, lit as a studio would, and saves it to a .png, e.g. a portrait
+	/// of an actor's head that isn't on screen. Taken at the start of FUCK's next draw.
+	/// @note Skinned parts are drawn as the model's skeleton poses them, and a head's face as FaceGen has morphed it.
+	/// @return false if the request was refused, e.g. no model or path.
+	inline bool RenderModel(const ModelRenderRequest& request)
+	{
+		auto i = GetInterface();
+		return i ? i->RenderModel(&request) : false;
+	}
+
+	/// @brief Draws meshes you've made off screen at once, lit as RenderModel() lights a model, into request.rgba, e.g. item cards.
+	/// @note On the render thread only, e.g. from a present hook. The meshes are only read during the call.
+	/// @return false if nothing could be drawn, e.g. no meshes or FUCK's pipeline failed.
+	inline bool DrawMeshes(const MeshDrawRequest& request)
+	{
+		auto i = GetInterface();
+		return i ? i->DrawMeshes(&request) : false;
 	}
 }
 
