@@ -238,8 +238,9 @@ namespace FUCK
 	enum class CameraSettingsFlags : int
 	{
 		kNone            = 0,
-		kSpeeds          = 1 << 0,  // Per-device speed tabs, under a Camera Feel header
-		kSelectDeviceTab = 1 << 1   // Open on the tab for the device in use. Pass it on the frame your panel opens
+		kSpeeds          = 1 << 0,  // Per-device speed tabs, under a Camera Feel node
+		kSelectDeviceTab = 1 << 1,  // Open on the tab for the device in use. Pass it on the frame your panel opens
+		kNoToggles       = 1 << 2   // Leaves out the toggles, so a setting of your own can go between them and the speeds
 	};
 
 	inline CameraSettingsFlags  operator|(CameraSettingsFlags a, CameraSettingsFlags b) { return static_cast<CameraSettingsFlags>(static_cast<int>(a) | static_cast<int>(b)); }
@@ -500,7 +501,8 @@ namespace FUCK
 	}
 
 	/// @brief The camera's settings, saved by FUCK as they change: cinematic movement, inverted tilt and turning, then the speeds
-	/// under their own header with kSpeeds.
+	/// under their own node with kSpeeds. To put a setting of your own between, draw it after one call without kSpeeds, then call
+	/// again with kSpeeds and kNoToggles.
 	/// @return true if anything changed.
 	inline bool DrawCameraSettings(CameraSettingsFlags flags = CameraSettingsFlags::kNone)
 	{
