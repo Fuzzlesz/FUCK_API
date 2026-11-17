@@ -1631,6 +1631,7 @@ namespace FUCK
 		if (auto i = GetInterface())
 			i->TreePop();
 	}
+	/// @note Doesn't indent its contents, as it has no end call. Indent them yourself, or use StickyHeader or TreeNode, which do.
 	inline bool CollapsingHeader(const char* label, int flags = 0) { return GetInterface() ? GetInterface()->CollapsingHeader(label, flags) : false; }
 
 	inline bool BeginPopupContextItem(const char* str_id = nullptr, int mouse_button = 1)
