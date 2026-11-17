@@ -2712,7 +2712,7 @@ namespace FUCK
 		kChanged
 	};
 
-	/// @brief Handles first-frame initialization, default loading, and screen clamping for custom-positioned windows.
+	/// @brief Handles first-frame initialisation, default loading, and screen clamping for custom-positioned windows.
 	inline PosInitResult InitializeCustomPosition(ImVec2& pos, const ImVec2& defaultPos, bool& outHasClamped, float tolerance = 50.0f)
 	{
 		ImVec2 displaySize = GetDisplaySize();
@@ -3130,7 +3130,7 @@ namespace FUCK
 		}
 	}
 
-	/// @brief Scales the font, padding, spacing and rounding until PopScale(). Nested calls replace the scale, they don't compound.
+	/// @brief Scales the font, padding, spacing, and rounding until PopScale(). Nested calls replace the scale, they don't compound.
 	/// @param font Defaults to the regular font.
 	inline void PushScale(float scaleMultiplier, ImFont* font = nullptr)
 	{
@@ -3302,7 +3302,7 @@ namespace FUCK
 			i->RefreshTools();
 	}
 
-	/// @brief Whether the game has hidden its own HUD: the intro cart ride, cutscenes, dialogue and the like.
+	/// @brief Whether the game has hidden its own HUD: the intro cart ride, cutscenes, dialogue, and the like.
 	/// @note What kHideWithHUD windows follow. Updated once a frame. FUCK hiding the HUD under its own menu doesn't count.
 	inline bool IsGameHUDHidden() { return GetInterface() ? GetInterface()->IsGameHUDHidden() : false; }
 
@@ -3350,7 +3350,7 @@ namespace FUCK
 		return GetInterface() ? GetInterface()->ComboWithKeyBadges(label, current_item, items, items_count, popup_max_height_in_items, badgeKeys, hoveredItem) : false;
 	}
 
-	/// @brief Holds an actor still: no animation, AI or pushing, with the eyes kept open and looking ahead. Works whether or not the game is paused.
+	/// @brief Holds an actor still: no animation, AI, or pushing, with the eyes kept open and looking ahead. Works whether or not the game is paused.
 	/// @param holdPhysics Pauses kRunPhysics' FSMP and CBPC while it's held, so the frozen actor's hair and cloth hold still too. They can't
 	/// be held for one actor alone, so false keeps everyone's running.
 	/// @note The actor stays frozen while any plugin holds it, so releasing only lets go of this plugin's hold. Every hold is let go before a save loads.
