@@ -401,6 +401,15 @@ namespace FUCK
 			i->SetCameraUpperBody(client, upperBody);
 	}
 
+	/// @brief Keeps body or part framing where it is, not following the part or pose as they change, e.g. while the subject's model is
+	/// rebuilt in stages. The base camera's turn is held too. Let go, it frames again and turns back, easing over, so the change
+	/// shows as one move.
+	inline void SetCameraFramingHeld(ICameraClient* client, bool held)
+	{
+		if (auto i = GetInterface())
+			i->SetCameraFramingHeld(client, held);
+	}
+
 	/// @brief Offset bases: where the camera is heading, which is where it settles once any easing ends.
 	inline bool GetCameraOffsets(ICameraClient* client, CameraOffsets& offsets)
 	{
