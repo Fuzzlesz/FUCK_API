@@ -978,6 +978,7 @@ struct FUCK_Interface
 	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
 	void (*SetCameraUpperBody)(FUCK::ICameraClient*, bool);
 	void (*SetCameraFramingHeld)(FUCK::ICameraClient*, bool);
+	void (*SetCameraFramingKeepsView)(FUCK::ICameraClient*, bool);
 
 	void (*AddCameraListener)(void* userdata, void (*callback)(int event, const char* context, void* userdata));
 	void (*RemoveCameraListener)(void* userdata);
