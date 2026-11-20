@@ -6,6 +6,7 @@
 // Optional extras:
 //   FUCK_ColorPalette.h - Recent/fixed colour swatch grid (v6+)
 //   FUCK_Camera.h       - Camera sessions, shared camera controls and applets (v7+)
+//   FUCK_ModelRender.h  - Off-screen renders of loaded models and your own meshes, e.g. portraits and item cards (v9+)
 //   IconsFontAwesome6.h - Font Awesome icon macros, drawn by every font but Font::kGameIcons
 //   IconsGameIcons.h    - game-icons.net icon macros, drawn by Font::kGameIcons (v8+)
 
@@ -402,65 +403,6 @@ namespace FUCK
 		ImVec2 pictureMax{};
 	};
 
-	/// @brief One layer of a face's tint, for ModelRenderRequest.
-	struct ModelRenderTintLayer
-	{
-		const char* mask = nullptr;  // A greyscale .dds from the game's data, under textures\ or not. Copied
-		float       colour[4]{};     // RGB laid over where the mask is white, at A's strength. 0 to 1
-	};
-
-	/// @brief Options for RenderModel().
-	struct ModelRenderRequest
-	{
-		std::uint32_t   size        = sizeof(ModelRenderRequest);  // Lets later versions add options, leave as is
-		RE::NiAVObject* model       = nullptr;  // A loaded model or part of one, e.g. an actor's face node. Held until it's drawn
-		const char*     path        = nullptr;  // The .png to write. Its folders are made. Copied
-		std::uint32_t   pixels      = 256;      // Square
-		float           yaw         = 0.0f;     // Degrees. 0 is front on, as an actor faces
-		float           pitch       = 0.0f;     // Degrees, looking down on it
-		float           margin      = 1.05f;    // Room around the model, as a scale on its size
-		bool            transparent = false;    // A clear background, else FUCK's studio backdrop
-		void*           userdata    = nullptr;
-		void (*callback)(const char* path, bool success, void* userdata) = nullptr;  // Optional. Called on a background thread once written
-
-		// The face's tint built from these, in order, in place of its own. For a face whose tint isn't its own to draw into,
-		// e.g. a copy made at runtime, which shares the game's
-		const ModelRenderTintLayer* faceTint      = nullptr;
-		std::uint32_t               faceTintCount = 0;
-	};
-
-	/// @brief One mesh for DrawMeshes(), already on the GPU as the caller made it.
-	struct MeshDraw
-	{
-		void*         vertexBuffer     = nullptr;  // An ID3D11Buffer of position xyz, UV, and normal xyz as floats, 32 bytes a vertex
-		void*         indexBuffer      = nullptr;  // An ID3D11Buffer of 32-bit indices
-		std::uint32_t indexCount       = 0;
-		void*         diffuse          = nullptr;  // An ID3D11ShaderResourceView, or none for flat grey
-		bool          useAlpha         = false;    // The diffuse's alpha cuts it
-		bool          blendAlpha       = false;    // Drawn over the solid meshes, blended
-		float         alpha            = 1.0f;
-		float         cutoff           = 0.0f;     // Alpha at or under this isn't drawn
-		float         specularStrength = 0.10f;
-		float         specularPower    = 42.0f;
-		float         emissive[3]{};
-		float         emissiveStrength = 0.0f;
-	};
-
-	/// @brief Options for DrawMeshes().
-	struct MeshDrawRequest
-	{
-		std::uint32_t   size      = sizeof(MeshDrawRequest);  // Lets later versions add options, leave as is
-		const MeshDraw* meshes    = nullptr;
-		std::uint32_t   meshCount = 0;
-		float           viewProj[16]{};                     // The view times the projection, as DirectX::XMStoreFloat4x4 stores it
-		float           eye[3]{};                           // The camera, in the meshes' space
-		float           lightDir[3]{ 0.0f, 0.0f, 1.0f };    // Towards the key light
-		std::uint32_t   pixels       = 256;                 // Square
-		float           backdropLift = 0.0f;                // Brightens the studio backdrop, e.g. behind dark hair
-		bool            transparent  = false;               // A clear background, else the studio backdrop
-		std::uint8_t*   rgba         = nullptr;             // pixels x pixels x 4 bytes, filled with the picture
-	};
-
 	/// @brief Options for CaptureFrame().
 	struct CaptureRequest
 	{
@@ -487,6 +429,11 @@ namespace FUCK
 	};
 
 	// --- Optional Header Types ---
+	// Defined in FUCK_ModelRender.h
+	struct ModelRenderRequest;
+	struct MeshDraw;
+	struct MeshDrawRequest;
+
 	// Defined in FUCK_Camera.h
 	struct CameraSessionOptions;
 	struct CameraScreenRect;
@@ -1002,6 +949,8 @@ struct FUCK_Interface
 	bool (*CaptureFrame)(const FUCK::CaptureRequest*);
 	bool (*RenderModel)(const FUCK::ModelRenderRequest*);
 	bool (*DrawMeshes)(const FUCK::MeshDrawRequest*);
+	bool (*ReadMeshMaterial)(void*, void*, FUCK::MeshDraw*);
+
 };
 #pragma pack(pop)
 
@@ -3676,25 +3625,6 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->CaptureFrame(&request) : false;
-	}
-
-	/// @brief Draws a loaded model off screen with its own textures, lit as a studio would, and saves it to a .png, e.g. a portrait
-	/// of an actor's head that isn't on screen. Taken at the start of FUCK's next draw.
-	/// @note Skinned parts are drawn as the model's skeleton poses them, and a head's face as FaceGen has morphed it.
-	/// @return false if the request was refused, e.g. no model or path.
-	inline bool RenderModel(const ModelRenderRequest& request)
-	{
-		auto i = GetInterface();
-		return i ? i->RenderModel(&request) : false;
-	}
-
-	/// @brief Draws meshes you've made off screen at once, lit as RenderModel() lights a model, into request.rgba, e.g. item cards.
-	/// @note On the render thread only, e.g. from a present hook. The meshes are only read during the call.
-	/// @return false if nothing could be drawn, e.g. no meshes or FUCK's pipeline failed.
-	inline bool DrawMeshes(const MeshDrawRequest& request)
-	{
-		auto i = GetInterface();
-		return i ? i->DrawMeshes(&request) : false;
 	}
 
 	/// @brief A themed combo box whose rows you draw yourself, e.g. with Selectable(), for a list Combo() can't hold: rows that are
