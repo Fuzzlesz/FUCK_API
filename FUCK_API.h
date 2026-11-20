@@ -375,20 +375,20 @@ namespace FUCK
 	/// @brief A picture card for Card(): a picture with its name under it, e.g. one entry in a gallery.
 	struct CardDesc
 	{
-		std::uint32_t size           = sizeof(CardDesc);   // Lets later versions add options, leave as is
-		const char*   id             = nullptr;            // Unique among its siblings, as a label's ID is
-		const char*   name           = nullptr;            // Optional. Under the picture, cut with "..." when it doesn't fit
-		ImVec4        nameColor{};                         // Optional, e.g. to mark one that doesn't fit. Zero alpha keeps the theme's
-		void*         image          = nullptr;            // A FUCK image handle. Drawn once it's ready
-		ImageState    state          = ImageState::kNone;  // While there's no picture to draw: kLoading spins and kFailed crosses
-		const char*   glyph          = nullptr;            // Optional. An icon in an empty picture, e.g. ICON_FA_IMAGE
-		float         side           = 0.0f;               // The picture's width, e.g. as CardGrid() hands it
-		float         aspect         = 1.0f;               // The picture's height over its width
-		float         alpha          = 1.0f;               // The picture's opacity, e.g. to fade it in
-		bool          selected       = false;              // Edged as the theme edges its lit tab
-		bool          showStar       = false;              // A favourite star in the picture's top-left corner
-		bool          favourite      = false;
-		float         tooltipPicture = 0.0f;               // Optional. The picture shown this wide over a tooltip set while it's hovered, e.g. 256 scaled. 0 none
+		std::uint32_t size      = sizeof(CardDesc);   // Lets later versions add options, leave as is
+		const char*   id        = nullptr;            // Unique among its siblings, as a label's ID is
+		const char*   name      = nullptr;            // Optional. Under the picture, cut with "..." when it doesn't fit
+		ImVec4        nameColor{};                    // Optional, e.g. to mark one that doesn't fit. Zero alpha keeps the theme's
+		void*         image     = nullptr;            // A FUCK image handle. Drawn once it's ready
+		ImageState    state     = ImageState::kNone;  // While there's no picture to draw: kLoading spins and kFailed crosses
+		const char*   glyph     = nullptr;            // Optional. An icon in an empty picture, e.g. ICON_FA_IMAGE
+		float         side      = 0.0f;               // The picture's width, e.g. as CardGrid() hands it
+		float         aspect    = 1.0f;               // The picture's height over its width
+		float         alpha     = 1.0f;               // The picture's opacity, e.g. to fade it in
+		bool          selected  = false;              // Edged as the theme edges its lit tab
+		bool          showStar  = false;              // A favourite star in the picture's top-left corner
+		bool          favourite = false;
+		float         tooltipPicture = 0.0f;          // Optional. The picture shown this wide over a tooltip set while it's hovered, e.g. 256 scaled. 0 none
 	};
 
 	/// @brief What happened to a card drawn by Card().
@@ -938,7 +938,6 @@ struct FUCK_Interface
 
 	bool (*ButtonEx)(const char*, bool, float);
 	bool (*BeginTabBarWithTrailing)(const char*, float, int);
-
 	bool (*BeginComboStyled)(const char*, const char*, float, int);
 	void (*EndCombo)();
 
@@ -950,7 +949,6 @@ struct FUCK_Interface
 	bool (*RenderModel)(const FUCK::ModelRenderRequest*);
 	bool (*DrawMeshes)(const FUCK::MeshDrawRequest*);
 	bool (*ReadMeshMaterial)(void*, void*, FUCK::MeshDraw*);
-
 };
 #pragma pack(pop)
 
@@ -3548,6 +3546,24 @@ namespace FUCK
 		return i ? i->BeginTabBarWithTrailing(str_id, trailingWidth, flags) : false;
 	}
 
+	/// @brief A themed combo box whose rows you draw yourself, e.g. with Selectable(), for a list Combo() can't hold: rows that are
+	/// disabled or have tooltips of their own. It has no label; draw one beside it if it needs one.
+	/// @param id The box's ID, starting "##" so no label shows, e.g. "##target". @param preview What the closed box shows.
+	/// @param width The box's width, or 0 for the item width. @param itemCount How many rows, which caps the dropdown's height (up to 8 show before it scrolls); it fits fewer.
+	/// @return True while the dropdown is open. Draw the rows and call EndCombo() then, and only then.
+	inline bool BeginComboStyled(const char* id, const char* preview, float width = 0.0f, int itemCount = 8)
+	{
+		auto i = GetInterface();
+		return i ? i->BeginComboStyled(id, preview, width, itemCount) : false;
+	}
+
+	/// @brief Closes BeginComboStyled()'s dropdown, after its rows.
+	inline void EndCombo()
+	{
+		if (auto i = GetInterface())
+			i->EndCombo();
+	}
+
 	/// @brief Turns ImGui's gamepad navigation off while your window drives the pad itself, so the shoulders and face buttons can't move
 	/// focus into another plugin's window. The buttons still reach ImGui as keys, e.g. for IsKeyPressed(ImGuiKey_GamepadR1).
 	/// @note Off while any plugin asks, so letting go only lets go of this plugin's ask. Let go when your window closes.
@@ -3625,24 +3641,6 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->CaptureFrame(&request) : false;
-	}
-
-	/// @brief A themed combo box whose rows you draw yourself, e.g. with Selectable(), for a list Combo() can't hold: rows that are
-	/// disabled or have tooltips of their own. It has no label; draw one beside it if it needs one.
-	/// @param id The box's ID, starting "##" so no label shows, e.g. "##target". @param preview What the closed box shows.
-	/// @param width The box's width, or 0 for the item width. @param itemCount How many rows, which caps the dropdown's height (up to 8 show before it scrolls); it fits fewer.
-	/// @return True while the dropdown is open. Draw the rows and call EndCombo() then, and only then.
-	inline bool BeginComboStyled(const char* id, const char* preview, float width = 0.0f, int itemCount = 8)
-	{
-		auto i = GetInterface();
-		return i ? i->BeginComboStyled(id, preview, width, itemCount) : false;
-	}
-
-	/// @brief Closes BeginComboStyled()'s dropdown, after its rows.
-	inline void EndCombo()
-	{
-		if (auto i = GetInterface())
-			i->EndCombo();
 	}
 }
 
