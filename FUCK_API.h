@@ -991,6 +991,9 @@ struct FUCK_Interface
 	bool (*ButtonEx)(const char*, bool, float);
 	bool (*BeginTabBarWithTrailing)(const char*, float, int);
 
+	bool (*BeginComboStyled)(const char*, const char*, float, int);
+	void (*EndCombo)();
+
 	void (*SetGamepadNavBlockedBy)(const char*, bool);
 
 	bool (*Card)(const FUCK::CardDesc*, FUCK::CardResult*);
@@ -3691,6 +3694,24 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->DrawMeshes(&request) : false;
+	}
+
+	/// @brief A themed combo box whose rows you draw yourself, e.g. with Selectable(), for a list Combo() can't hold: rows that are
+	/// disabled or have tooltips of their own. It has no label; draw one beside it if it needs one.
+	/// @param id The box's ID, starting "##" so no label shows, e.g. "##target". @param preview What the closed box shows.
+	/// @param width The box's width, or 0 for the item width. @param itemCount How many rows, which caps the dropdown's height (up to 8 show before it scrolls); it fits fewer.
+	/// @return True while the dropdown is open. Draw the rows and call EndCombo() then, and only then.
+	inline bool BeginComboStyled(const char* id, const char* preview, float width = 0.0f, int itemCount = 8)
+	{
+		auto i = GetInterface();
+		return i ? i->BeginComboStyled(id, preview, width, itemCount) : false;
+	}
+
+	/// @brief Closes BeginComboStyled()'s dropdown, after its rows.
+	inline void EndCombo()
+	{
+		if (auto i = GetInterface())
+			i->EndCombo();
 	}
 }
 
