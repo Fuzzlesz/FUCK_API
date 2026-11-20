@@ -374,19 +374,20 @@ namespace FUCK
 	/// @brief A picture card for Card(): a picture with its name under it, e.g. one entry in a gallery.
 	struct CardDesc
 	{
-		std::uint32_t size      = sizeof(CardDesc);   // Lets later versions add options, leave as is
-		const char*   id        = nullptr;            // Unique among its siblings, as a label's ID is
-		const char*   name      = nullptr;            // Optional. Under the picture, cut with "..." when it doesn't fit
-		ImVec4        nameColor{};                    // Optional, e.g. to mark one that doesn't fit. Zero alpha keeps the theme's
-		void*         image     = nullptr;            // A FUCK image handle. Drawn once it's ready
-		ImageState    state     = ImageState::kNone;  // While there's no picture to draw: kLoading spins and kFailed crosses
-		const char*   glyph     = nullptr;            // Optional. An icon in an empty picture, e.g. ICON_FA_IMAGE
-		float         side      = 0.0f;               // The picture's width, e.g. as CardGrid() hands it
-		float         aspect    = 1.0f;               // The picture's height over its width
-		float         alpha     = 1.0f;               // The picture's opacity, e.g. to fade it in
-		bool          selected  = false;              // Edged as the theme edges its lit tab
-		bool          showStar  = false;              // A favourite star in the picture's top-left corner
-		bool          favourite = false;
+		std::uint32_t size           = sizeof(CardDesc);   // Lets later versions add options, leave as is
+		const char*   id             = nullptr;            // Unique among its siblings, as a label's ID is
+		const char*   name           = nullptr;            // Optional. Under the picture, cut with "..." when it doesn't fit
+		ImVec4        nameColor{};                         // Optional, e.g. to mark one that doesn't fit. Zero alpha keeps the theme's
+		void*         image          = nullptr;            // A FUCK image handle. Drawn once it's ready
+		ImageState    state          = ImageState::kNone;  // While there's no picture to draw: kLoading spins and kFailed crosses
+		const char*   glyph          = nullptr;            // Optional. An icon in an empty picture, e.g. ICON_FA_IMAGE
+		float         side           = 0.0f;               // The picture's width, e.g. as CardGrid() hands it
+		float         aspect         = 1.0f;               // The picture's height over its width
+		float         alpha          = 1.0f;               // The picture's opacity, e.g. to fade it in
+		bool          selected       = false;              // Edged as the theme edges its lit tab
+		bool          showStar       = false;              // A favourite star in the picture's top-left corner
+		bool          favourite      = false;
+		float         tooltipPicture = 0.0f;               // Optional. The picture shown this wide over a tooltip set while it's hovered, e.g. 256 scaled. 0 none
 	};
 
 	/// @brief What happened to a card drawn by Card().
