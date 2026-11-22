@@ -81,7 +81,7 @@ namespace FUCK
 		bool          falloff             = false;              // Fade by view angle
 		float         falloffAngles[2]{ 1.0f, 0.0f };           // Cosines, face on then edge on
 		float         falloffOpacity[2]{ 1.0f, 1.0f };          // Opacity at each
-		bool          additive            = false;
+		bool          additive            = false;              // Added onto what's behind it rather than blended over; needs blendAlpha. Effect or not
 
 		void*         normalMap           = nullptr;           // SRV. Tangent space (DirectX), no tangents needed; alpha is where it shines
 		bool          normalMapModelSpace = false;             // Model space instead, rotated by normalTurn
