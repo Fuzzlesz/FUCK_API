@@ -5,121 +5,132 @@
 // [ OPTIONAL ] MODEL RENDER (API v9+)
 // ==================================================
 //
-// Off-screen pictures of 3D, lit as a studio would light them, on FUCK's own backdrop or a clear one:
-//   RenderModel()      A loaded model, e.g. an actor's head that isn't on screen, saved to a .png
-//   DrawMeshes()       Meshes you've built yourself, drawn into your own buffer, e.g. item cards
-//   ReadMeshMaterial() A shape's look as FUCK reads it, to fill a MeshDraw the way FUCK draws its own
+// Off-screen renders under a fixed studio light, on FUCK's backdrop or a clear one.
+//   RenderModel()      Queue a loaded model to be saved as a .png
+//   DrawMeshes()       Draw your own buffers into your RGBA buffer, now (render thread only)
+//   ReadMeshMaterial() Fill a MeshDraw's look from a game shape
+// Each struct's size field lets later versions add fields; leave it at its default.
 
 namespace FUCK
 {
-	/// @brief One layer of a face's tint, for ModelRenderRequest.
+	/// @brief One face tint layer, for ModelRenderRequest::faceTint.
 	struct ModelRenderTintLayer
 	{
-		const char* mask = nullptr;  // A greyscale .dds from the game's data, under textures\ or not. Copied
-		float       colour[4]{};     // RGB laid over where the mask is white, at A's strength. 0 to 1
+		const char* mask = nullptr;  // Tint mask .dds, "textures\" optional. Copied
+		float       colour[4]{};     // RGBA 0-1: RGB laid where the mask is white, at A's strength
 	};
 
 	/// @brief Options for RenderModel().
 	struct ModelRenderRequest
 	{
-		std::uint32_t   size        = sizeof(ModelRenderRequest);  // Lets later versions add options, leave as is
-		RE::NiAVObject* model       = nullptr;  // A loaded model or part of one, e.g. an actor's face node. Held until it's drawn
-		const char*     path        = nullptr;  // The .png to write. Its folders are made. Copied
+		std::uint32_t   size        = sizeof(ModelRenderRequest);
+		RE::NiAVObject* model       = nullptr;  // e.g. an actor's face node. Held until drawn
+		const char*     path        = nullptr;  // Output .png; folders are created. Copied
 		std::uint32_t   pixels      = 256;      // Square
-		float           yaw         = 0.0f;     // Degrees. 0 is front on, as an actor faces
-		float           pitch       = 0.0f;     // Degrees, looking down on it
-		float           margin      = 1.05f;    // Room around the model, as a scale on its size
-		bool            transparent = false;    // A clear background, else FUCK's studio backdrop
+		float           yaw         = 0.0f;     // Degrees; 0 faces the model's front (+Y)
+		float           pitch       = 0.0f;     // Degrees; positive looks down
+		float           margin      = 1.05f;    // Space round the model; 1 is a tight fit
+		bool            transparent = false;    // Clear background instead of the backdrop
 		void*           userdata    = nullptr;
-		void (*callback)(const char* path, bool success, void* userdata) = nullptr;  // Optional. Called on a background thread once written
+		// Optional. Called after writing, on FUCK's writer thread (render thread if drawing failed)
+		void (*callback)(const char* path, bool success, void* userdata) = nullptr;
 
-		// The face's tint built from these, in order, in place of its own. For a face whose tint isn't its own to draw into,
-		// e.g. a copy made at runtime, which shares the game's
+		// Optional. Replaces a FaceGen face's tint with these layers, in order. For runtime copies, which share the game's. Copied
 		const ModelRenderTintLayer* faceTint      = nullptr;
 		std::uint32_t               faceTintCount = 0;
 
-		bool frameFace = false;  // Framed on the face alone, so every face is one size whatever its hair or beard
+		bool          frameFace   = false;  // Frame the face only, so hair and beards don't change its size
+		std::uint32_t supersample = 2;      // Render this many times larger and scale down. 1-4, max 4096 px
 	};
 
-	/// @brief One mesh for DrawMeshes(), already on the GPU as the caller made it.
+	/// @brief One mesh for DrawMeshes(), in GPU buffers you own. ReadMeshMaterial() can fill its look.
 	struct MeshDraw
 	{
-		void*         vertexBuffer     = nullptr;  // An ID3D11Buffer of position xyz, UV, and normal xyz as floats, 32 bytes a vertex
-		bool          vertexColours    = false;    // Each vertex is followed by its colour, RGBA as floats, 48 bytes a vertex
-		bool          vertexAlpha      = false;    // The vertex colour's alpha fades it too, as the game's Vertex_Alpha shader flag asks
-		void*         indexBuffer      = nullptr;  // An ID3D11Buffer of 32-bit indices
-		std::uint32_t indexCount       = 0;
-		void*         diffuse          = nullptr;  // An ID3D11ShaderResourceView, or none for flat grey
-		bool          useAlpha         = false;    // The diffuse's alpha cuts it
-		bool          blendAlpha       = false;    // Drawn over the solid meshes, blended
-		float         alpha            = 1.0f;
-		float         cutoff           = 0.0f;     // Alpha at or under this isn't drawn
-		float         specularStrength = 0.10f;
-		float         specularPower    = 42.0f;
+		std::uint32_t size                = sizeof(MeshDraw);  // Same on every mesh in a request
+		void*         vertexBuffer        = nullptr;           // ID3D11Buffer: position xyz, UV, normal xyz as floats (32 bytes)
+		bool          vertexColours       = false;             // Plus RGBA floats per vertex (48 bytes). Multiplies the colour; hair tints by green
+		bool          vertexAlpha         = false;             // Vertex alpha fades it too. Needs vertexColours
+		void*         indexBuffer         = nullptr;           // ID3D11Buffer of 32-bit triangle list indices
+		std::uint32_t indexCount          = 0;
+
+		void*         diffuse             = nullptr;           // SRV; none draws grey
+		bool          useAlpha            = false;             // Diffuse alpha cuts or fades it
+		bool          blendAlpha          = false;             // Blend over solid meshes instead of cutting at cutoff
+		float         alpha               = 1.0f;
+		float         cutoff              = 0.0f;              // Alpha at or below isn't drawn
+		float         specularStrength    = 0.10f;
+		float         specularPower       = 42.0f;
 		float         emissive[3]{};
-		float         emissiveStrength = 0.0f;
-		bool          useTint          = false;    // Hair's tint, as the game's hair shader takes it from the material
+		float         emissiveStrength    = 0.0f;
+		bool          useTint             = false;             // Hair: tinted and softly lit, as the game's hair shader
 		float         tint[3]{ 1.0f, 1.0f, 1.0f };
-		bool          twoSided         = true;     // Drawn from behind too. The game culls a shape's back unless its shader says two-sided
-		void*         glow             = nullptr;  // An ID3D11ShaderResourceView of a glow map, where the emissive colour shows, as the game's glow shader takes it
-		void*         envMap           = nullptr;  // An ID3D11ShaderResourceView of a cube map it reflects, as the game's environment shader takes it
-		void*         envMask          = nullptr;  // An ID3D11ShaderResourceView of where it reflects (red), or none for everywhere
-		bool          envMaskInAlpha   = false;    // Where it reflects is envMask's alpha instead, e.g. a normal map's gloss, as the game takes it for a material with no mask
-		float         envScale         = 0.0f;     // How strongly it reflects, the material's envMapScale
-		// Drawn as the game's effect shader draws a glowing shell, e.g. a Ghostblade's: unlit, its colour the diffuse times effectColour
-		// and effectScale, over the solid meshes. ReadMeshMaterial fills these from a BSEffectShaderProperty
-		bool          effect           = false;
-		float         effectColour[4]{ 1.0f, 1.0f, 1.0f, 1.0f };  // The material's base colour and alpha
-		float         effectScale      = 1.0f;     // The material's base colour scale, how bright it glows
-		void*         palette          = nullptr;  // An ID3D11ShaderResourceView the diffuse's green picks a colour from along a row the base colour's red picks, as the game's greyscale to palette does
-		bool          paletteAlpha     = false;    // The palette's alpha is the alpha too, picked by the diffuse's alpha along the row the base colour's alpha picks
-		bool          falloff          = false;    // Faded by how square on it is to the camera, as the game's falloff does
-		float         falloffAngles[2]{ 1.0f, 0.0f };     // The cosines it fades between, square on first
-		float         falloffOpacity[2]{ 1.0f, 1.0f };    // The opacity at each
-		bool          additive         = false;    // Added to what's behind it rather than laid over it
+		bool          twoSided            = true;              // Game shapes are one-sided unless their shader says otherwise
+		void*         glow                = nullptr;           // SRV; where emissive shows
+
+		void*         envMap              = nullptr;           // Cube map SRV; needs envScale > 0
+		void*         envMask             = nullptr;           // SRV, red is where it reflects; none is everywhere
+		bool          envMaskInAlpha      = false;             // Mask is envMask's alpha, e.g. a normal map's
+		float         envScale            = 0.0f;
+
+		bool          effect              = false;             // Effect shader shell (e.g. a Ghostblade): unlit, diffuse * effectColour * effectScale, over solid meshes
+
+		float         effectColour[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+		float         effectScale         = 1.0f;
+		void*         palette             = nullptr;            // Greyscale-to-palette SRV: diffuse green picks the column, effectColour red the row
+		bool          paletteAlpha        = false;              // Alpha from the palette too (diffuse alpha, effectColour alpha)
+		bool          falloff             = false;              // Fade by view angle
+		float         falloffAngles[2]{ 1.0f, 0.0f };           // Cosines, face on then edge on
+		float         falloffOpacity[2]{ 1.0f, 1.0f };          // Opacity at each
+		bool          additive            = false;
+
+		void*         normalMap           = nullptr;           // SRV. Tangent space (DirectX), no tangents needed; alpha is where it shines
+		bool          normalMapModelSpace = false;             // Model space instead, rotated by normalTurn
+		float         normalTurn[9]{ 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };  // Rows: shape space to vertex space
+		float         uvOffset[2]{};                           // UV * uvScale + uvOffset, for every texture
+		float         uvScale[2]{ 1.0f, 1.0f };
+		bool          envUntinted         = false;             // Reflect like glass (e.g. a cornea), not tinted like metal
 	};
 
 	/// @brief Options for DrawMeshes().
 	struct MeshDrawRequest
 	{
-		std::uint32_t   size      = sizeof(MeshDrawRequest);  // Lets later versions add options, leave as is
-		const MeshDraw* meshes    = nullptr;
-		std::uint32_t   meshCount = 0;
-		float           viewProj[16]{};                     // The view times the projection, as DirectX::XMStoreFloat4x4 stores it
-		float           eye[3]{};                           // The camera, in the meshes' space
-		float           lightDir[3]{ 0.0f, 0.0f, 1.0f };    // Towards the key light
-		std::uint32_t   pixels       = 256;                 // Square
-		float           backdropLift = 0.0f;                // Brightens the studio backdrop, e.g. behind dark hair
-		bool            transparent  = false;               // A clear background, else the studio backdrop
-		std::uint8_t*   rgba         = nullptr;             // pixels x pixels x 4 bytes, filled with the picture
+		std::uint32_t   size         = sizeof(MeshDrawRequest);
+		const MeshDraw* meshes       = nullptr;
+		std::uint32_t   meshCount    = 0;
+		float           viewProj[16]{};                   // XMStoreFloat4x4 layout. Right-handed, or it's mirrored
+		float           eye[3]{};                         // Camera position
+		float           lightDir[3]{ 0.0f, 0.0f, 1.0f };  // Towards the key light
+		std::uint32_t   pixels       = 256;               // Square
+		float           backdropLift = 0.0f;              // Brightens the backdrop, e.g. behind dark hair
+		bool            transparent  = false;
+		std::uint8_t*   rgba         = nullptr;           // pixels * pixels * 4, straight alpha
+		std::uint32_t   supersample  = 2;
+		float           exposure     = 1.0f;              // Brightness before highlights roll off
+		float           saturation   = 1.0f;              // 0 grey, 1 unchanged
+		float           contrast     = 1.0f;              // 1 unchanged
 	};
 
-	/// @brief Draws a loaded model off screen with its own textures, lit as a studio would, and saves it to a .png, e.g. a portrait
-	/// of an actor's head that isn't on screen. Taken at the start of FUCK's next draw.
-	/// @note Skinned parts are drawn as the model's skeleton poses them, and a head's face as FaceGen has morphed it.
-	/// @return false if the request was refused, e.g. no model or path.
+	/// @brief Queues a loaded model to be drawn with its own textures and saved as a .png.
+	/// @note Drawn as currently posed and morphed; culled shapes and see-through ones without a loaded texture are skipped.
+	/// @return false if refused (no model or path); no callback then.
 	inline bool RenderModel(const ModelRenderRequest& request)
 	{
 		auto i = GetInterface();
 		return i ? i->RenderModel(&request) : false;
 	}
 
-	/// @brief Draws meshes you've made off screen at once, lit as RenderModel() lights a model, into request.rgba, e.g. item cards.
-	/// @note On the render thread only, e.g. from a present hook. The meshes are only read during the call.
-	/// @return false if nothing could be drawn, e.g. no meshes or FUCK's pipeline failed.
+	/// @brief Draws meshes into request.rgba now, lit as RenderModel() is.
+	/// @note Render thread only. Waits on the GPU. Blended meshes go on in the order given, so pass them farthest first.
+	/// @return false if nothing was drawn, e.g. off the render thread or an unknown MeshDraw size.
 	inline bool DrawMeshes(const MeshDrawRequest& request)
 	{
 		auto i = GetInterface();
 		return i ? i->DrawMeshes(&request) : false;
 	}
 
-	/// @brief Fills a MeshDraw's look from a shape's shader and alpha properties as FUCK reads them for its own renders: its
-	/// diffuse, alpha and how it fades, specular, emission and glow, hair tint, sidedness, and environment map, or an effect
-	/// shader's shell: its colour, palette, falloff and blend. Its buffers are left as they are.
-	/// @param shaderProperty The shape's RE::BSShaderProperty, e.g. its runtime data's shaderProperty.
-	/// @param alphaProperty The shape's RE::NiAlphaProperty, or nullptr for none.
-	/// @note The texture views are the game's own, valid while the shape's model is loaded.
-	/// @return false if it has neither a lighting nor an effect shader, leaving out as it was.
+	/// @brief Fills out's look from a shape's BSShaderProperty and NiAlphaProperty (or nullptr).
+	/// @note Keeps size, buffers, indexCount, vertexColours and normalTurn. Textures are the game's, valid while the model is loaded.
+	/// @return false, out unchanged, if it has neither a lighting nor an effect shader.
 	inline bool ReadMeshMaterial(void* shaderProperty, void* alphaProperty, MeshDraw& out)
 	{
 		auto i = GetInterface();
