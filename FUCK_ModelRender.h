@@ -89,6 +89,8 @@ namespace FUCK
 		float         uvOffset[2]{};                           // UV * uvScale + uvOffset, for every texture
 		float         uvScale[2]{ 1.0f, 1.0f };
 		bool          envUntinted         = false;             // Reflect like glass (e.g. a cornea), not tinted like metal
+		bool          skinTint            = false;             // Skin (body, hands, feet): skinTintColour soft-lit over the diffuse, as the game's skin shader does
+		float         skinTintColour[3]{ 1.0f, 1.0f, 1.0f };   // RGB 0-1, the actor's skin tone, or a dye colour where a mod dyes by this material
 	};
 
 	/// @brief Options for DrawMeshes().
