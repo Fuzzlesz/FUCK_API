@@ -169,7 +169,7 @@ namespace FUCK
 		kAutoResize          = 1 << 13,  // Sizes automatically to contents, decorated or not. Items with no set width take one from the window, so give sliders and the like their own (SetNextItemWidth), or a Dummy for a least width
 		kIgnoreUserScale     = 1 << 14,  // Ignores global UI scaling slider
 		kCustomPosition      = 1 << 15,  // Opts out of Host-managed pos saving/loading
-		kRenderDuringTM      = 1 << 16,  // Renders when 'tm' (Toggle Menus) is set
+		kRenderDuringTM      = 1 << 16,  // Renders when 'tm' (Toggle Menus) is set. With HDR on, its colours are distorted then
 		kCloseOnClickOutside = 1 << 17,  // Closes the window when the user clicks anywhere outside of its bounds
 		kEditable            = 1 << 18,  // Host-managed moving and saving while the FUCK menu is open
 		kScalable            = 1 << 19,  // With kEditable: corner handles scale the window. Read it with GetWindowScale()
