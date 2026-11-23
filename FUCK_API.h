@@ -291,7 +291,8 @@ namespace FUCK
 		kLabelRight      = 1 << 1,
 		kCtrlToRebind    = 1 << 2,
 		kAlwaysHighlight = 1 << 3,
-		kNoModifiers     = 1 << 4
+		kNoModifiers     = 1 << 4,
+		kRegularLabel    = 1 << 5   // The label in the regular face rather than the light one labels use, as the game's own button hints are
 	};
 
 	/// @brief What FUCK is taking input for, from GetInputCaptureState().
@@ -940,6 +941,7 @@ struct FUCK_Interface
 	bool (*BeginTabBarWithTrailing)(const char*, float, int);
 	bool (*BeginComboStyled)(const char*, const char*, float, int);
 	void (*EndCombo)();
+	bool (*FavouriteSelectable)(const char*, bool, bool*, int, const ImVec2&);
 
 	void (*SetGamepadNavBlockedBy)(const char*, bool);
 
@@ -3560,6 +3562,15 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->EndCombo();
+	}
+
+	/// @brief Selectable() with a favourite star at its end, as the sidebar's rows have. A long label is cut short with "..." to clear it.
+	/// @param favourite Toggled by a click on the star, or the gamepad's Y on the hovered or focused row. The star shows on favourites, and
+	/// on the row while it's hovered, focused or selected.
+	/// @return Whether the row was clicked. A click on the star doesn't count.
+	inline bool FavouriteSelectable(const char* label, bool selected, bool* favourite, int flags = 0, const ImVec2& size = ImVec2(0, 0))
+	{
+		return GetInterface() ? GetInterface()->FavouriteSelectable(label, selected, favourite, flags, size) : false;
 	}
 
 	/// @brief Turns gamepad navigation off while your window handles the pad itself, so its buttons can't move focus to other windows. They
