@@ -383,37 +383,35 @@ namespace FUCK
 		return i ? i->IsCameraBodyFramed(client) : false;
 	}
 
-	/// @brief Aims body framing at one part of the subject rather than the whole body, e.g. the head or a held item, and orbits round it.
-	/// Applies while the body is framed, easing over as framing does, and the player's zoom carries on from it.
-	/// @param node A node on the subject, e.g. "NPC Head [Head]". nullptr or empty goes back to the whole body.
-	/// @param size The part's height to frame, in game units. 0 measures what hangs off the node instead, so a dagger is framed close and
-	/// a greatsword wide. A node that isn't there, or has nothing to measure, keeps the whole body.
+	/// @brief Frames one part of the subject instead of the whole body, e.g. the head or a held item, and orbits round it. Applies while the
+	/// body is framed, easing over as framing does.
+	/// @param node A node on the subject, e.g. "NPC Head [Head]". nullptr or empty frames the whole body again.
+	/// @param size The part's height to frame, in game units. 0 measures what's attached to the node, so a dagger frames close and a
+	/// greatsword wide. A missing node, or one with nothing to measure, frames the whole body.
 	inline void SetCameraPartFraming(ICameraClient* client, const char* node, float size = 0.0f)
 	{
 		if (auto i = GetInterface())
 			i->SetCameraPartFraming(client, node, size);
 	}
 
-	/// @brief Turns kFrameUpperBody on or off for the running session, framing again in place, e.g. as a setting changes while it's shown.
+	/// @brief Turns kFrameUpperBody on or off for the running session, reframing in place, e.g. when a setting changes.
 	inline void SetCameraUpperBody(ICameraClient* client, bool upperBody)
 	{
 		if (auto i = GetInterface())
 			i->SetCameraUpperBody(client, upperBody);
 	}
 
-	/// @brief Keeps body or part framing from following the part or pose as they change, e.g. while the subject's model is rebuilt in
-	/// stages. An ease already under way finishes. The base camera's turn is held too. Let go, it frames again and turns back, easing over, so the change
-	/// shows as one move.
+	/// @brief Holds body or part framing, and the base camera's turn, while the subject changes, e.g. while its model is rebuilt in stages.
+	/// An ease under way finishes. When let go, it reframes in one move.
 	inline void SetCameraFramingHeld(ICameraClient* client, bool held)
 	{
 		if (auto i = GetInterface())
 			i->SetCameraFramingHeld(client, held);
 	}
 
-	/// @brief Framing turned on from now starts at the view as it is, unless that's far off, so the camera doesn't move. The camera's moves
-	/// and the subject's facing are kept, and the base camera's turn is held, e.g. to hold a face steady through a menu's own camera moves.
-	/// It follows the framed part only when framing's let go (SetCameraFramingHeld), not as the subject turns or idles. Off, framing
-	/// places the subject as usual and the turn eases back.
+	/// @brief Framing turned on from now starts from the current view, unless that's far off, so the camera doesn't jump, e.g. to hold a
+	/// face steady through a menu's own camera moves. It follows the framed part only when SetCameraFramingHeld() lets go, not as the
+	/// subject turns or idles. Off, framing places the subject as usual.
 	inline void SetCameraFramingKeepsView(ICameraClient* client, bool keep)
 	{
 		if (auto i = GetInterface())

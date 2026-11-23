@@ -3493,32 +3493,31 @@ namespace FUCK
 	// Version 9
 	// --------------------------------------------------
 
-	/// @brief AddImage clipped to the theme's corner shape, rounded or cut away, so a picture can fill a frame edge to edge.
-	/// @param rounding The corner radius, in pixels. Pass GetStyleVar(ImGuiStyleVar_FrameRounding) to match the theme.
-	/// @param corners ImDrawFlags_RoundCorners* bits, for shaping only some corners.
+	/// @brief AddImage clipped to the theme's corner shape, rounded or cut, so a picture can fill a frame.
+	/// @param rounding Corner radius in pixels. GetStyleVar(ImGuiStyleVar_FrameRounding) matches the theme.
+	/// @param corners ImDrawFlags_RoundCorners* bits, to shape only some corners.
 	inline void AddThemedImage(ImTextureID textureId, const ImVec2& min, const ImVec2& max, float rounding, int corners = ImDrawFlags_RoundCornersAll, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& col = ImVec4(1, 1, 1, 1))
 	{
 		if (auto i = GetInterface())
 			i->AddThemedImage((void*)textureId, min, max, uv0, uv1, col, rounding, corners);
 	}
 
-	/// @brief DrawRectFilled in the theme's corner shape, rounded or cut away, as FUCK's own frames are drawn.
-	/// @param corners ImDrawFlags_RoundCorners* bits, for shaping only some corners.
+	/// @brief DrawRectFilled in the theme's corner shape, as FUCK's own frames are.
+	/// @param corners ImDrawFlags_RoundCorners* bits, to shape only some corners.
 	inline void DrawThemedRectFilled(const ImVec2& min, const ImVec2& max, const ImVec4& col, float rounding, int corners = ImDrawFlags_RoundCornersAll)
 	{
 		if (auto i = GetInterface())
 			i->DrawThemedRectFilled(min, max, col, rounding, corners);
 	}
 
-	/// @brief DrawRect in the theme's corner shape, rounded or cut away, as FUCK's own frames are drawn.
+	/// @brief DrawRect in the theme's corner shape, as FUCK's own frames are.
 	inline void DrawThemedRect(const ImVec2& min, const ImVec2& max, const ImVec4& col, float rounding, float thickness = 1.0f)
 	{
 		if (auto i = GetInterface())
 			i->DrawThemedRect(min, max, col, rounding, thickness);
 	}
 
-	/// @brief One of the theme's own colours, so a custom control can be marked as FUCK marks its own,
-	/// such as a selected item edged in kTabBorderActive as the lit tab is.
+	/// @brief One of the theme's colours, to mark a custom control as FUCK marks its own, e.g. kTabBorderActive for a selected item.
 	inline ImVec4 GetThemeColor(ThemeColor which)
 	{
 		ImVec4 v(1, 1, 1, 1);
@@ -3528,53 +3527,52 @@ namespace FUCK
 	}
 
 	/// @brief Button() with a selected state and a minimum width.
-	/// @param selected Keeps the border lit as when hovered, as ColorButton() does, e.g. for the current page in a row of page buttons.
-	/// @param minTextWidth Sized for text this wide when it's wider than the label, e.g. the widest of the labels a button flips between,
-	/// so it keeps one width and doesn't shove what's beside it. Padding is added as for the label.
+	/// @param selected Keeps the border lit, e.g. for the current page in a row of page buttons.
+	/// @param minTextWidth Sizes the button for text at least this wide, e.g. the widest label it switches between, so its width stays put.
 	inline bool Button(const char* label, bool selected, float minTextWidth = 0.0f)
 	{
 		auto i = GetInterface();
 		return i ? i->ButtonEx(label, selected, minTextWidth) : false;
 	}
 
-	/// @brief BeginTabBar() that leaves room at the row's right-hand end, so a button or checkbox drawn there sits beside the tabs
-	/// and they never run under it. Draw it at the content region's right edge, level with the tabs, and end the bar with EndTabBar().
-	/// @param trailingWidth The width of what's drawn there. Item spacing is left before it.
+	/// @brief BeginTabBar() that keeps room at the right end for your own item, e.g. a button, so the tabs never run under it. Draw the item
+	/// at the right edge, level with the tabs, then call EndTabBar().
+	/// @param trailingWidth Your item's width. Item spacing is added before it.
 	inline bool BeginTabBarWithTrailing(const char* str_id, float trailingWidth, int flags = 0)
 	{
 		auto i = GetInterface();
 		return i ? i->BeginTabBarWithTrailing(str_id, trailingWidth, flags) : false;
 	}
 
-	/// @brief A themed combo box whose rows you draw yourself, e.g. with Selectable(), for a list Combo() can't hold: rows that are
-	/// disabled or have tooltips of their own. It has no label; draw one beside it if it needs one.
-	/// @param id The box's ID, starting "##" so no label shows, e.g. "##target". @param preview What the closed box shows.
-	/// @param width The box's width, or 0 for the item width. @param itemCount How many rows, which caps the dropdown's height (up to 8 show before it scrolls); it fits fewer.
-	/// @return True while the dropdown is open. Draw the rows and call EndCombo() then, and only then.
+	/// @brief A themed combo box whose rows you draw, e.g. with Selectable() or FavouriteSelectable(), for rows Combo() can't do, such as
+	/// disabled rows or rows with their own tooltips. It draws no label.
+	/// @param id Its ID, e.g. "##target". @param preview The closed box's text.
+	/// @param width 0 for the item width. @param itemCount The number of rows, sizing the dropdown to fit up to 8 before it scrolls.
+	/// @return True while open: draw the rows, then call EndCombo().
 	inline bool BeginComboStyled(const char* id, const char* preview, float width = 0.0f, int itemCount = 8)
 	{
 		auto i = GetInterface();
 		return i ? i->BeginComboStyled(id, preview, width, itemCount) : false;
 	}
 
-	/// @brief Closes BeginComboStyled()'s dropdown, after its rows.
+	/// @brief Ends BeginComboStyled()'s dropdown. Call it only when BeginComboStyled() returned true.
 	inline void EndCombo()
 	{
 		if (auto i = GetInterface())
 			i->EndCombo();
 	}
 
-	/// @brief Turns ImGui's gamepad navigation off while your window drives the pad itself, so the shoulders and face buttons can't move
-	/// focus into another plugin's window. The buttons still reach ImGui as keys, e.g. for IsKeyPressed(ImGuiKey_GamepadR1).
-	/// @note Off while any plugin asks, so letting go only lets go of this plugin's ask. Let go when your window closes.
+	/// @brief Turns gamepad navigation off while your window handles the pad itself, so its buttons can't move focus to other windows. They
+	/// still read as keys, e.g. IsKeyPressed(ImGuiKey_GamepadR1).
+	/// @note Stays off while any plugin asks for it. Let go when your window closes.
 	inline void SetGamepadNavBlocked(bool blocked)
 	{
 		if (auto i = GetInterface())
 			i->SetGamepadNavBlockedBy(g_pluginName, blocked);
 	}
 
-	/// @brief A picture card: the picture, its name cut to fit, an optional favourite star, and the selected edge, drawn as one item.
-	/// @note Hover tooltips are yours, e.g. the whole name when nameCut is set.
+	/// @brief A picture card: the picture, its name cut to fit, an optional favourite star and the selected edge, as one item.
+	/// @note Tooltips are yours, e.g. the full name when nameCut is set.
 	inline CardResult Card(const CardDesc& desc)
 	{
 		CardResult r;
@@ -3590,9 +3588,9 @@ namespace FUCK
 		return i ? i->GetCardHeight(side, aspect, withName) : side * aspect;
 	}
 
-	/// @brief Lays cards out in rows that fill the width, each at least minSide wide, and skips the rows out of view.
+	/// @brief Lays cards out in rows that fill the width, each at least minSide wide, skipping rows out of view.
 	/// @param drawOne Called as drawOne(index, side) for each card in view. Draw one Card() that wide.
-	/// @note Draw it in a scrolling child, as the rows out of view are only skipped within the window.
+	/// @note Call it inside a scrolling child, as only rows outside the window are skipped.
 	template <class F>
 	inline void CardGrid(std::size_t count, float minSide, float aspect, bool withNames, F&& drawOne)
 	{
@@ -3634,8 +3632,8 @@ namespace FUCK
 		}
 	}
 
-	/// @brief Saves part of the next frame to a .png, as the game drew it before FUCK's UI, e.g. a portrait for a gallery.
-	/// @note Game menus drawn that frame are in it, so hide yours first. Taken at the start of FUCK's next draw.
+	/// @brief Saves part of the next frame to a .png, as the game drew it under FUCK's UI, e.g. a portrait for a gallery.
+	/// @note Game menus drawn that frame are included, so hide yours first.
 	/// @return false if the request was refused, e.g. no path.
 	inline bool CaptureFrame(const CaptureRequest& request)
 	{
