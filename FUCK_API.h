@@ -175,7 +175,9 @@ namespace FUCK
 		kScalable            = 1 << 19,  // With kEditable: corner handles scale the window. Read it with GetWindowScale()
 		kAnchorRight         = 1 << 20,  // With kEditable: keeps the right edge fixed. GetDefaultPos() is then the top-right corner
 		kRotatable           = 1 << 21,  // With kEditable: a handle rotates the window's drawn content. Read it with GetWindowRotation()
-		kHideWithHUD         = 1 << 22   // A HUD widget: hides while the game hides its own HUD (intro, cutscenes, dialogue), and HUD managers may fade it. See IsGameHUDHidden(), EnumerateHUDWidgets()
+		kHideWithHUD         = 1 << 22,  // A HUD widget: hides while the game hides its own HUD (intro, cutscenes, dialogue), and HUD managers may fade it. See IsGameHUDHidden(), EnumerateHUDWidgets()
+		kFadeIn              = 1 << 23,  // Fades in as it opens and out as it closes, over half a second. Its fade out is a copy of its last frame, so Draw() isn't called once closed. It goes back the way it slid in, if it moved itself in Draw(). Pictures and draw callbacks leave the copy at once
+		kFadeInQuick         = 1 << 24   // As kFadeIn, over about an eighth of a second
 	};
 
 	enum class TableFlags
