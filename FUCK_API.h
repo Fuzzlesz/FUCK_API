@@ -1631,6 +1631,7 @@ namespace FUCK
 		}
 		return ImVec2(0, 0);
 	}
+	/// @brief Moves the window, e.g. to slide it in from Draw(). Call it before drawing anything there, as child windows already drawn stay where they were.
 	inline void SetWindowPos(const ImVec2& pos, int cond = 0)
 	{
 		if (auto i = GetInterface())
