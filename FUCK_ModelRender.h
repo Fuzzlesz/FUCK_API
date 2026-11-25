@@ -20,6 +20,15 @@ namespace FUCK
 		float       colour[4]{};     // RGBA 0-1: RGB laid where the mask is white, at A's strength
 	};
 
+	/// @brief Alternate vertex positions for matching dynamic skinned meshes.
+	/// @note Shape names, vertex counts and topology must agree. The target keeps its materials and pose.
+	struct ModelRenderGeometrySource
+	{
+		RE::NiNode* root          = nullptr;  // Source scene, held until drawn
+		const char* node          = nullptr;  // Optional name of the subtree to search. Copied
+		const char* referenceBone = nullptr;  // Optional bone for aligning source and target skin spaces. Copied
+	};
+
 	/// @brief Options for RenderModel().
 	struct ModelRenderRequest
 	{
@@ -41,6 +50,8 @@ namespace FUCK
 
 		bool          frameFace   = false;  // Frame the face only, so hair and beards don't change its size
 		std::uint32_t supersample = 2;      // Render this many times larger and scale down. 1-4, max 4096 px
+
+		const ModelRenderGeometrySource* geometrySource = nullptr;  // Optional. Read during RenderModel()
 	};
 
 	/// @brief One mesh for DrawMeshes(), in GPU buffers you own. ReadMeshMaterial() can fill its look.
