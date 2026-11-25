@@ -177,7 +177,10 @@ namespace FUCK
 		kRotatable           = 1 << 21,  // With kEditable: a handle rotates the window's drawn content. Read it with GetWindowRotation()
 		kHideWithHUD         = 1 << 22,  // A HUD widget: hides while the game hides its own HUD (intro, cutscenes, dialogue), and HUD managers may fade it. See IsGameHUDHidden(), EnumerateHUDWidgets()
 		kFadeIn              = 1 << 23,  // Fades in as it opens and out as it closes, over half a second. Its fade out is a copy of its last frame, so Draw() isn't called once closed. It goes back the way it slid in, if it moved itself in Draw(). Pictures and draw callbacks leave the copy at once
-		kFadeInQuick         = 1 << 24   // As kFadeIn, over about an eighth of a second
+		kFadeInQuick         = 1 << 24,  // As kFadeIn, over about an eighth of a second
+		kWASDNavigation      = 1 << 25,  // Unmodified WASD navigates like the arrow keys while this window has focus
+		kEActivate           = 1 << 26,  // Unmodified E activates the focused item like Enter
+		kNoFocusOnAppearing  = 1 << 27   // Keep the existing navigation focus when this window appears
 	};
 
 	enum class TableFlags
@@ -946,6 +949,10 @@ struct FUCK_Interface
 	bool (*FavouriteSelectable)(const char*, bool, bool*, int, const ImVec2&);
 
 	void (*SetGamepadNavBlockedBy)(const char*, bool);
+
+	void (*BeginChildEx)(const char*, float, float, int, int);
+	ImGuiID (*BeginNavPane)();
+	void (*NavHandoff)(ImGuiID, ImGuiID);
 
 	bool (*Card)(const FUCK::CardDesc*, FUCK::CardResult*);
 	float (*GetCardHeight)(float, float, bool);
@@ -3583,6 +3590,27 @@ namespace FUCK
 	{
 		if (auto i = GetInterface())
 			i->SetGamepadNavBlockedBy(g_pluginName, blocked);
+	}
+
+	/// @brief Begins a themed child with separate ImGui child and window flags. Close it with EndChild().
+	inline void BeginChildEx(const char* id, const ImVec2& size = ImVec2(0, 0), ImGuiChildFlags childFlags = 0, ImGuiWindowFlags windowFlags = 0)
+	{
+		if (auto i = GetInterface())
+			i->BeginChildEx(id, size.x, size.y, childFlags, windowFlags);
+	}
+
+	/// @brief Marks the current child as a navigation pane and restores a queued focus handoff before its items are drawn.
+	inline ImGuiID BeginNavPane()
+	{
+		auto i = GetInterface();
+		return i ? i->BeginNavPane() : 0;
+	}
+
+	/// @brief After drawing both panes, hand off an unhandled horizontal navigation move to the neighbouring pane.
+	inline void NavHandoff(ImGuiID left, ImGuiID right)
+	{
+		if (auto i = GetInterface())
+			i->NavHandoff(left, right);
 	}
 
 	/// @brief A picture card: the picture, its name cut to fit, an optional favourite star and the selected edge, as one item.
