@@ -80,7 +80,7 @@ namespace FUCK
 
 	enum class CameraSessionFlags : int
 	{
-		// Next bit: 23
+		// Next bit: 24
 		kNone             = 0,
 
 		// The session and the game
@@ -88,6 +88,7 @@ namespace FUCK
 		kDisableSaving    = 1 << 1,  // Saving is off for the session, so a save can't catch the camera mid-move. As Photo Mode does
 		kFreezeTime       = 1 << 2,  // Soft pause, so the world holds still for the session
 		kResumable        = 1 << 8,  // A newer session pauses this one instead of ending it, and it resumes when that one ends
+		kRunEffects       = 1 << 23, // Advance the subject's visual effects while a menu pauses or freezes the world
 		kRunPhysics       = 1 << 10, // FSMP and CBPC physics keep moving while the game is paused, e.g. by a menu. Does nothing without either
 		kHideObstructions = 1 << 17, // What stands between the camera and the subject is hidden while it's in the way, and brought back after, and as the session pauses or ends. The subject, their horse, whoever's framed with them, and anyone they hold stay
 		kHoldHeadStill    = 1 << 19, // The subject's head doesn't turn to look at anyone or anything, e.g. round at the camera as they face it. Back as it was as the session pauses or ends, and moved over with SetCameraSubject()
@@ -388,10 +389,11 @@ namespace FUCK
 	/// @param node A node on the subject, e.g. "NPC Head [Head]". nullptr or empty frames the whole body again.
 	/// @param size The part's height to frame, in game units. 0 measures what's attached to the node, so a dagger frames close and a
 	/// greatsword wide. A missing node, or one with nothing to measure, frames the whole body.
-	inline void SetCameraPartFraming(ICameraClient* client, const char* node, float size = 0.0f)
+	/// @param sideView Orbit to the side of an off-axis part when changing the framing.
+	inline void SetCameraPartFraming(ICameraClient* client, const char* node, float size = 0.0f, bool sideView = false)
 	{
 		if (auto i = GetInterface())
-			i->SetCameraPartFraming(client, node, size);
+			i->SetCameraPartFraming(client, node, size, sideView);
 	}
 
 	/// @brief Turns kFrameUpperBody on or off for the running session, reframing in place, e.g. when a setting changes.

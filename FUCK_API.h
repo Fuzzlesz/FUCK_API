@@ -929,7 +929,7 @@ struct FUCK_Interface
 	bool (*FaceCameraSubject)(FUCK::ICameraClient*, bool);
 
 	// Version 9
-	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float);
+	void (*SetCameraPartFraming)(FUCK::ICameraClient*, const char*, float, bool);
 	void (*SetCameraUpperBody)(FUCK::ICameraClient*, bool);
 	void (*SetCameraFramingHeld)(FUCK::ICameraClient*, bool);
 	void (*SetCameraFramingKeepsView)(FUCK::ICameraClient*, bool);
