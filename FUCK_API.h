@@ -960,6 +960,8 @@ struct FUCK_Interface
 	bool (*RenderModel)(const FUCK::ModelRenderRequest*);
 	bool (*DrawMeshes)(const FUCK::MeshDrawRequest*);
 	bool (*ReadMeshMaterial)(void*, void*, FUCK::MeshDraw*);
+
+	bool (*FilterBox)(const char*, const char*, char*, size_t, int);
 };
 #pragma pack(pop)
 
@@ -1479,7 +1481,11 @@ namespace FUCK
 	inline bool DragFloat3(const char* label, float v[3], float speed = 1.0f, float min = 0.0f, float max = 0.0f, const char* fmt = "%.3f") { return GetInterface() ? GetInterface()->DragFloat3(label, v, speed, min, max, fmt) : false; }
 	inline bool DragFloat4(const char* label, float v[4], float speed = 1.0f, float min = 0.0f, float max = 0.0f, const char* fmt = "%.3f") { return GetInterface() ? GetInterface()->DragFloat4(label, v, speed, min, max, fmt) : false; }
 	inline bool Combo(const char* label, int* current_item, const char* const* items, int items_count) { return GetInterface() ? GetInterface()->Combo(label, current_item, items, items_count) : false; }
+	/// @brief A searchable combo. Ctrl+F focuses the filter in the open dropdown.
+	/// @note Ctrl+Shift+F toggles the favourite on the hovered or focused result.
 	inline bool ComboWithFilter(const char* label, int* current_item, const char* const* items, int items_count, int popup_max_height_in_items = -1) { return GetInterface() ? GetInterface()->ComboWithFilter(label, current_item, items, items_count, popup_max_height_in_items) : false; }
+	/// @brief A form picker with searchable dropdowns. Ctrl+F focuses the open dropdown's filter.
+	/// @note Ctrl+Shift+F toggles the favourite on the hovered or focused form.
 	inline bool ComboForm(const char* label, std::uint32_t* currentFormID, std::uint8_t formType) { return GetInterface() ? GetInterface()->ComboForm(label, currentFormID, formType) : false; }
 	inline bool ComboForm(const char* label, std::string* currentEdid, std::uint8_t formType)
 	{
@@ -3681,6 +3687,31 @@ namespace FUCK
 	{
 		auto i = GetInterface();
 		return i ? i->CaptureFrame(&request) : false;
+	}
+
+	/// @brief A filter field with an optional hint and a clear button. Set its width with SetNextItemWidth().
+	/// @note Ctrl+F focuses the visible filter in the active panel or popup when no other item is active.
+	/// @param hint Placeholder text shown inside the field while the query is empty. Pass translated text for a custom placeholder,
+	/// nullptr for the framework's translated "Filter..." placeholder, or "" to leave the empty field blank.
+	/// @return Same as InputText for the given flags. Clearing the field also returns true.
+	inline bool FilterBox(const char* label, const char* hint, char* buf, size_t bufSize, int flags = 0)
+	{
+		auto i = GetInterface();
+		return i ? i->FilterBox(label, hint, buf, bufSize, flags) : false;
+	}
+
+	/// @overload Uses the framework's translated "Filter..." placeholder and the same Ctrl+F shortcut.
+	inline bool FilterBox(const char* label, std::string* str, int flags = 0)
+	{
+		if (!str)
+			return false;
+
+		char buf[2048];
+		strncpy_s(buf, sizeof(buf), str->c_str(), _TRUNCATE);
+		const bool submitted = FilterBox(label, nullptr, buf, sizeof(buf), flags);
+		if (*str != buf)
+			*str = buf;
+		return submitted;
 	}
 }
 
